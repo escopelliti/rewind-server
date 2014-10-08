@@ -11,48 +11,34 @@ namespace CommunicationLibrary
 {
     class ServerCommunicationManager : ClientServerCommunicationManager
     {
-        private IPEndPoint localEP;
-        private AsyncCallback acceptingSocketHandler;
-        private static ManualResetEvent allDone = new ManualResetEvent(false);
 
-        public ServerCommunicationManager(string host, int port, ProtocolType protocolType)
+        public Socket Listen(string host, int port, Socket socket)
         {
             IPHostEntry ipHostInfo = Dns.GetHostEntry(host);
             IPAddress ipAddress = ipHostInfo.AddressList[0];
-            localEP = new IPEndPoint(ipAddress, port);
-            socket = new Socket(AddressFamily.InterNetworkV6, SocketType.Stream, protocolType);
-            acceptingSocketHandler += AcceptSocketCallback;
-        }
-
-        private static void AcceptSocketCallback(IAsyncResult iar)
-        {
-
-            allDone.Set();
-            Socket serverSocket = (Socket)iar.AsyncState;
-            socket = serverSocket.EndAccept(iar);
-            SocketObject socketObj = new SocketObject();
-            socketObj.receiveBuffer = new byte[SocketObject.bufferSize];
-            socketObj.socket = socket;
-            bytesRead = new byte[SocketObject.bufferSize];
-            socket.BeginReceive(socketObj.receiveBuffer, 0, SocketObject.bufferSize, 0, receiveHandler, socketObj);
-        }
-
-        public void Listen()
-        {
+            IPEndPoint localEP = new IPEndPoint(ipAddress, port);
             try
             {
                 socket.Bind(localEP);
                 socket.Listen(100);
-                while (true)
-                {
-                    allDone.Reset();
-                    socket.BeginAccept(acceptingSocketHandler, socket);
-                    allDone.WaitOne();
-                }
+                return socket;
             }
             catch (Exception e)
             {
                 Console.WriteLine(e.ToString());
+                return null;
+            }
+        }
+
+        public Socket Accept(Socket serverSocket)
+        {
+            try
+            {
+                return serverSocket.Accept();
+            }
+            catch (SocketException se)
+            {
+                return null;
             }
         }
     }

@@ -10,16 +10,15 @@ namespace CommunicationLibrary
 {
     class ClientServerCommunicationManager
     {
-        protected static Socket socket;
-        protected AsyncCallback connectHandler;
-        protected AsyncCallback sendHandler;
-        public static AsyncCallback receiveHandler;
-        protected static byte[] bytesRead;
-        public static ManualResetEvent dataReady = new ManualResetEvent(false);
-
-        public void Send(byte[] toSend)
+        public Socket CreateSocket(ProtocolType protocolType)
         {
-            socket.BeginSend(toSend, 0, toSend.Length, 0, sendHandler, socket);
+            Socket socket = new Socket(AddressFamily.InterNetworkV6, SocketType.Stream, protocolType);
+            return socket;
+        }
+
+        public void Send(byte[] toSend, Socket socket)
+        {
+            socket.Send(toSend);
         }
 
         public void SendObject(object toSend)
@@ -28,13 +27,7 @@ namespace CommunicationLibrary
             //clientSocket.BeginSend(toSend, 0, toSend.Length, 0, sendHandler, clientSocket);
         }
 
-        protected static void SendCallback(IAsyncResult iar)
-        {
-            Socket client = (Socket)iar.AsyncState;
-            client.EndSend(iar);
-        }
-
-        public void SendFiles(List<string> filepathList)
+        public void SendFiles(List<string> filepathList, Socket socket)
         {
             foreach (string fileName in filepathList)
             {
@@ -42,12 +35,9 @@ namespace CommunicationLibrary
             }
         }
 
-        public void Receive()
+        public int Receive(byte[] bytes, Socket socket)
         {
-            SocketObject socketObj = new SocketObject();
-            socketObj.socket = socket;
-            socketObj.receiveBuffer = new byte[SocketObject.bufferSize];
-            socket.BeginReceive(socketObj.receiveBuffer, 0, SocketObject.bufferSize, 0, receiveHandler, socketObj);
+            return socket.Receive(bytes);
         }
 
         private void ReceiveObject()
@@ -55,11 +45,11 @@ namespace CommunicationLibrary
 
             //deserializzazione
         }
-        public struct SocketObject
-        {
-            public Socket socket;
-            public const int bufferSize = 1024;
-            public byte[] receiveBuffer;
-        }
+        //public struct SocketObject
+        //{
+        //    public Socket socket;
+        //    public const int bufferSize = 1024;
+        //    public byte[] receiveBuffer;
+        //}
     }
 }
