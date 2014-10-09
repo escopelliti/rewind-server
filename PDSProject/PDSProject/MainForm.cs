@@ -16,7 +16,8 @@ namespace PDSProject
     {
 
         public delegate void SetTextToClipboard(string stringData);
-        public SetTextToClipboard clipboardTextDelegate;
+        public static SetTextToClipboard clipboardTextDelegate;
+        public static MainForm mainForm;
 
         public MainForm()
         {
@@ -24,11 +25,13 @@ namespace PDSProject
             clipboardTextDelegate += new SetTextToClipboard(SetText);
         }
 
+        [STAThread]
         public static void Main()
         {
             ConnectionHandler handler = new ConnectionHandler();
             handler.Listen();
-            Application.Run(new MainForm());
+            mainForm = new MainForm();
+            Application.Run(mainForm);
         }
 
         private void SetText(string contentToPaste)

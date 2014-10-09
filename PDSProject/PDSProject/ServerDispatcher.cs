@@ -48,9 +48,9 @@ namespace PDSProject
             XDocument doc = new XDocument();
             MemoryStream ms = new MemoryStream((byte[]) request);
             doc = XDocument.Load(ms);
-
-            Invoke(new MainForm().clipboardTextDelegate();
-            System.Windows.Forms.Clipboard.SetText(doc.Descendants("content").ElementAt(0).Value);
+            //Console.WriteLine(doc);
+            MainForm.mainForm.Invoke(MainForm.clipboardTextDelegate, doc.Descendants("content").ElementAt(0).Value);
+            
             //interpreta l'XML (request) e a seconda del tipo richiama il corretto metodo (attenzione all'invio file)
         }
     }
