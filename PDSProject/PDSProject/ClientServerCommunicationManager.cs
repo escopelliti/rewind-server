@@ -21,12 +21,6 @@ namespace CommunicationLibrary
             socket.Send(toSend);
         }
 
-        public void SendObject(object toSend)
-        {
-            //Serialization and then send
-            //clientSocket.BeginSend(toSend, 0, toSend.Length, 0, sendHandler, clientSocket);
-        }
-
         public void SendFiles(List<string> filepathList, Socket socket)
         {
             foreach (string fileName in filepathList)
@@ -39,17 +33,5 @@ namespace CommunicationLibrary
         {
             return socket.Receive(bytes);
         }
-
-        private void ReceiveObject()
-        {
-
-            //deserializzazione
-        }
-        //public struct SocketObject
-        //{
-        //    public Socket socket;
-        //    public const int bufferSize = 1024;
-        //    public byte[] receiveBuffer;
-        //}
     }
 }

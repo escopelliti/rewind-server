@@ -54,6 +54,7 @@
       <DependentUpon>MainForm.cs</DependentUpon>
     </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="ProtocolUtils.cs" />
     <Compile Include="ServerCommunicationManager.cs" />
     <Compile Include="ServerDispatcher.cs" />
   </ItemGroup>

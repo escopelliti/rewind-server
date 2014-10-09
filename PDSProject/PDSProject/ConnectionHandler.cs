@@ -35,11 +35,26 @@ namespace CommunicationLibrary
             serverChannel.SetDataSocket(server.Listen(Dns.GetHostName(), 12001, serverChannel.GetDataSocket()));
 
             //faccio partire due thread che ascoltano sulle due socket e passano il Client al dispatcher
-            Thread thread1 = new Thread(() => WaitForClient(serverChannel.GetDataSocket()));
+            Thread thread1 = new Thread(() => WaitForClientOnDataSocket(serverChannel.GetDataSocket()));
             thread1.Start();
             Thread thread2 = new Thread(() => WaitForClient(serverChannel.GetCmdSocket()));
             thread2.Start();
            
+        }
+
+        private void WaitForClientOnDataSocket(Socket serverSocket)
+        {
+            while (true)
+            {
+                Client newClient = new Client();
+                Socket clientSocket = Accept(serverSocket);
+                if (!(clientSocket == null))
+                {
+                    newClient.SetSocket(clientSocket);
+                    dispatcher.StartListeningToData(newClient);
+                }
+            }
+
         }
 
         private void WaitForClient(Socket serverSocket)
