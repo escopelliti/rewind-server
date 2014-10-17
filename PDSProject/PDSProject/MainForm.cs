@@ -7,7 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-
+using System.Collections.Specialized;
 using CommunicationLibrary;
 
 namespace PDSProject
@@ -16,13 +16,16 @@ namespace PDSProject
     {
 
         public delegate void SetTextToClipboard(string stringData);
+        public delegate void SetFileDropListClipboard(StringCollection fileDropList);
         public static SetTextToClipboard clipboardTextDelegate;
+        public static SetFileDropListClipboard clipboardFilesDelegate;
         public static MainForm mainForm;
 
         public MainForm()
         {
             InitializeComponent();
             clipboardTextDelegate += new SetTextToClipboard(SetText);
+            clipboardFilesDelegate += new SetFileDropListClipboard(SetFileDropList);
         }
 
         [STAThread]
@@ -37,6 +40,11 @@ namespace PDSProject
         private void SetText(string contentToPaste)
         {
             System.Windows.Forms.Clipboard.SetText(contentToPaste);
+        }
+
+        private void SetFileDropList(StringCollection fileDropList)
+        {
+            System.Windows.Forms.Clipboard.SetFileDropList(fileDropList);
         }
     }
 }
