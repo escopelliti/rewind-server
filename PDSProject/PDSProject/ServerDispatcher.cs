@@ -14,6 +14,7 @@ using System.Collections.Concurrent;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using ServerTest;
+using System.Drawing;
 
 namespace PDSProject
 {
@@ -31,8 +32,15 @@ namespace PDSProject
         public delegate void ReceivingFilesEventHandler(Object sender, Object param);
         public event ReceivingFilesEventHandler receivingFiles;
 
+        public delegate void ChangeClipboardImageEventHandler(Object sender, Object param);
+        public event ChangeClipboardImageEventHandler clipboardImageHandler;
+
+        public delegate void SetupClipboardDataTransfer(Object sender, Object param);
+        public event SetupClipboardDataTransfer setupClipboardDataTransfer;
+
         private static List<ProtocolUtils.FileStruct> filesToReceive;
         private static int currentFileNum;
+   
         private static System.Collections.Specialized.StringCollection fileDropList;
 
         private static ConcurrentDictionary<string, RequestState> requestDictionary;
@@ -50,12 +58,66 @@ namespace PDSProject
         private void SetupDispatcher()
         {
             dispatch = new Dictionary<string, Delegate>();
+
             this.clipboardHandler += NewClipboardDataToPaste;
             dispatch[ProtocolUtils.SET_CLIPBOARD_TEXT] = new Action<Object>(obj => clipboardHandler(this, obj));
+
             this.clipboardFilesHandler += NewClipboardFileToPaste;
             dispatch[ProtocolUtils.SET_CLIPBOARD_FILES] = new Action<Object>(obj => clipboardFilesHandler(this, obj));
+
             this.receivingFiles += MoveByteToFiles;
             dispatch[ProtocolUtils.TRANSFER_FILES] = new Action<Object>(obj => receivingFiles(this, obj));
+
+            setupClipboardDataTransfer += SendAckToClient;
+            dispatch[ProtocolUtils.SET_CLIPBOARD_IMAGE] = new Action<Object>(obj => setupClipboardDataTransfer(this, obj));
+
+            clipboardImageHandler += ReceiveDataForClipboard;
+            dispatch[ProtocolUtils.TRANSFER_IMAGE] = new Action<Object>(obj => clipboardImageHandler(this, obj));
+        }
+
+        private static void SendAckToClient(Object source, Object param)
+        {
+            RequestState requestState = (RequestState)param;
+            server.Send(Encoding.Unicode.GetBytes(requestState.token), requestState.client.GetSocket());
+        }
+
+        private static void ReceiveDataForClipboard(Object source, Object param)
+        {
+            RequestState requestState = (RequestState)param;
+            string filename = ProtocolUtils.protocolDictionary[requestState.type];
+            using (var stream = new FileStream(filename, FileMode.Append))
+            {
+                stream.Write(requestState.data, 0, requestState.data.Length);
+                stream.Close();
+                server.Send(Convert.FromBase64String(requestState.token), requestState.client.GetSocket());
+            }
+            if (new FileInfo(filename).Length >= Convert.ToInt64(requestState.stdRequest[ProtocolUtils.CONTENT].ToString())) 
+            {
+                
+                RequestState value = new RequestState();
+                if (!requestDictionary.TryRemove(requestState.token, out value))
+                {//custom exception would be better than this
+                    throw new Exception("Request not present in the dictionary");
+                }
+
+                //TODO : AVOID CONDITIONAL TEST
+                if (requestState.type == ProtocolUtils.TRANSFER_IMAGE)
+                {
+                    CreateImageForClipboard(filename);
+                }
+            }            
+        }
+
+        private static void CreateImageForClipboard(string filename)
+        {
+            Image image = null;
+            using (var ms = new MemoryStream(File.ReadAllBytes(filename)))
+            {
+                image = Image.FromStream(ms);
+
+            }
+            File.Delete(filename);
+            MainForm.mainForm.Invoke(MainForm.clipboardImageDelegate, image);  
         }
 
         private void MoveByteToFiles(Object source, Object param)
@@ -64,13 +126,13 @@ namespace PDSProject
             if (currentFileNum < filesToReceive.Count)
             {
                 ProtocolUtils.FileStruct currentFile = filesToReceive.ElementAt(currentFileNum);             
-                using (var stream = new FileStream(".\\tmp\\" + currentFile.dir + currentFile.name, FileMode.Append))
+                using (var stream = new FileStream(ProtocolUtils.TMP_DIR + currentFile.dir + currentFile.name, FileMode.Append))
                 {
                     stream.Write(request.data, 0, request.data.Length);
                     stream.Close();
                     server.Send(Convert.FromBase64String(request.token), request.client.GetSocket());
                 }
-                if (new FileInfo(".\\tmp\\" + currentFile.dir + currentFile.name).Length == currentFile.size)
+                if (new FileInfo(ProtocolUtils.TMP_DIR + currentFile.dir + currentFile.name).Length == currentFile.size)
                 {
                     currentFileNum++;
                     if (currentFileNum == filesToReceive.Count)
@@ -86,13 +148,13 @@ namespace PDSProject
             }
         }
 
-        private static void DeleteTmpContent() {
+        private static void DeleteFileDirContent(string toRemove) {
 
-            foreach (string dir in Directory.GetDirectories(".\\tmp")) {
+            foreach (string dir in Directory.GetDirectories(toRemove)) {
                 DirectoryInfo dirInfo = new DirectoryInfo(dir);
                 dirInfo.Delete(true);
             }
-            foreach (string file in Directory.GetFiles(".\\tmp"))
+            foreach (string file in Directory.GetFiles(toRemove))
             {
                 FileInfo fileInfo = new FileInfo(file);
                 fileInfo.Delete();
@@ -104,7 +166,7 @@ namespace PDSProject
         private void NewClipboardFileToPaste(Object source, Object param)
         {   
             //leggere il JSON e preparare il lavoro per i file e le cartelle che arrivano
-            DeleteTmpContent();
+            DeleteFileDirContent(ProtocolUtils.TMP_DIR);
             RequestState requestState = (RequestState) param;
 
             JObject contentJson = (JObject)requestState.stdRequest[ProtocolUtils.CONTENT];
@@ -114,15 +176,15 @@ namespace PDSProject
             filesToReceive.AddRange(files);
             foreach (ProtocolUtils.FileStruct fileStruct in files)
             {
-                fileDropList.Add(".\\tmp\\" + fileStruct.name);
+                fileDropList.Add(ProtocolUtils.TMP_DIR + fileStruct.name);
             }
 
             foreach (var prop in contentJson) {     
                 if (prop.Key != ProtocolUtils.FILE)
-                {                   
-                    Directory.CreateDirectory(".\\tmp\\" + prop.Key);
+                {
+                    Directory.CreateDirectory(ProtocolUtils.TMP_DIR + prop.Key);
                     CreateClipboardContent((JObject)contentJson[prop.Key], prop.Key);
-                    fileDropList.Add(".\\tmp\\" + prop.Key);
+                    fileDropList.Add(ProtocolUtils.TMP_DIR + prop.Key);
                 }
             }
             //foreach( IEnumerable<JToken> item in requestState.stdRequest[ProtocolUtils.CONTENT].Values()) {
@@ -162,8 +224,8 @@ namespace PDSProject
             files = JsonConvert.DeserializeObject<List<ProtocolUtils.FileStruct>>(contentJson[ProtocolUtils.FILE].ToString());
             filesToReceive.Concat(files);
             foreach (var prop in contentJson) {
-                if(prop.Key != ProtocolUtils.FILE) {                                    
-                    Directory.CreateDirectory(".\\tmp\\" + dir + "\\" + prop.Key);
+                if(prop.Key != ProtocolUtils.FILE) {
+                    Directory.CreateDirectory(ProtocolUtils.TMP_DIR + dir + "\\" + prop.Key);
                     CreateClipboardContent((JObject) contentJson[prop.Key], prop.Key);                    
                 }
             }
@@ -245,12 +307,7 @@ namespace PDSProject
                 dispatch[newRequest.type].DynamicInvoke(newRequest);
             }
             else
-            {
-                //XDocument xRequest = new XDocument();
-                //MemoryStream ms = new MemoryStream(newRequest.data);
-                //xRequest = XDocument.Load(ms);
-                //string requestType = xRequest.Descendants(ProtocolUtils.TYPE).ElementAt(0).Value.ToString();
-                //StandardRequest receivedRequest = JsonConvert.DeserializeObject<StandardRequest>(Encoding.Unicode.GetString(newRequest.data));
+            {                
                 JObject receivedJson = JObject.Parse(Encoding.Unicode.GetString(newRequest.data));
                 string type = receivedJson[ProtocolUtils.TYPE].ToString();
                 string requestType = ProtocolUtils.protocolDictionary[type];

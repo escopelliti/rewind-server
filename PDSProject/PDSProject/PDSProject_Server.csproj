@@ -62,7 +62,6 @@
     <Compile Include="ServerCommunicationManager.cs" />
     <Compile Include="ServerDispatcher.cs" />
     <Compile Include="StandardRequest.cs" />
-    <Compile Include="XMLFactory.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />

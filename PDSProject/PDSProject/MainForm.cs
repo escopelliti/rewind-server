@@ -17,15 +17,18 @@ namespace PDSProject
 
         public delegate void SetTextToClipboard(string stringData);
         public delegate void SetFileDropListClipboard(StringCollection fileDropList);
+        public delegate void SetImageToClipboard(Image image);
         public static SetTextToClipboard clipboardTextDelegate;
         public static SetFileDropListClipboard clipboardFilesDelegate;
+        public static SetImageToClipboard clipboardImageDelegate;
         public static MainForm mainForm;
 
         public MainForm()
         {
             InitializeComponent();
-            clipboardTextDelegate += new SetTextToClipboard(SetText);
-            clipboardFilesDelegate += new SetFileDropListClipboard(SetFileDropList);
+            clipboardTextDelegate += new SetTextToClipboard(SetClipboardText);
+            clipboardFilesDelegate += new SetFileDropListClipboard(SetClipboardFileDropList);
+            clipboardImageDelegate += new SetImageToClipboard(SetClipboardImage);
         }
 
         [STAThread]
@@ -37,12 +40,17 @@ namespace PDSProject
             Application.Run(mainForm);
         }
 
-        private void SetText(string contentToPaste)
+        private void SetClipboardText(string contentToPaste)
         {
             System.Windows.Forms.Clipboard.SetText(contentToPaste);
         }
 
-        private void SetFileDropList(StringCollection fileDropList)
+        private void SetClipboardImage(Image image)
+        {
+            System.Windows.Forms.Clipboard.SetImage(image);
+        }
+
+        private void SetClipboardFileDropList(StringCollection fileDropList)
         {
             System.Windows.Forms.Clipboard.SetFileDropList(fileDropList);
         }
