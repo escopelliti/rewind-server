@@ -6,15 +6,14 @@ using System.Threading.Tasks;
 using System.Threading;
 using System.Net.Sockets;
 using CommunicationLibrary;
-
-using System.Xml.Linq;
 using System.IO;
 using System.Collections.Concurrent;
 
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using ServerTest;
+using Protocol;
 using System.Drawing;
+using System.Runtime.InteropServices;
 
 namespace PDSProject
 {
@@ -260,10 +259,16 @@ namespace PDSProject
                 {
                     byte[] actualData = new byte[bytesReadNum];
                     System.Buffer.BlockCopy(data, 0, actualData, 0, bytesReadNum);
+                    INPUT input = JsonConvert.DeserializeObject<INPUT>(Encoding.Unicode.GetString(actualData));
+                    INPUT[] inputList = {input};
+                    SendInput(1, inputList, Marshal.SizeOf(input));
                     //ricostruisci l'INPUT dal buffer di byte e utilizza la SendInput;
                 }
             }
         }
+
+        [DllImport("user32.dll", EntryPoint = "SendInput", SetLastError = true)]
+        public static extern UInt32 SendInput(uint numberOfInputs, INPUT[] inputs, int sizeOfInputStructure);
 
         private static void ListenToRequest(Object newClient)
         {
