@@ -51,6 +51,7 @@
     <Compile Include="Client.cs" />
     <Compile Include="ClientServerCommunicationManager.cs" />
     <Compile Include="ConnectionHandler.cs" />
+    <Compile Include="Input.cs" />
     <Compile Include="MainForm.cs">
       <SubType>Form</SubType>
     </Compile>

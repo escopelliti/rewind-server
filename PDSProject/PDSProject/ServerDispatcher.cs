@@ -251,19 +251,32 @@ namespace PDSProject
 
         public void StartListeningToData(Client client)
         {
+            Socket socket = client.GetSocket();
             while (true)
             {
                 byte[] data = new byte[1024];
                 int bytesReadNum = server.Receive(data, client.GetSocket());
-                if (bytesReadNum > 0)
-                {
-                    byte[] actualData = new byte[bytesReadNum];
-                    System.Buffer.BlockCopy(data, 0, actualData, 0, bytesReadNum);
-                    INPUT input = JsonConvert.DeserializeObject<INPUT>(Encoding.Unicode.GetString(actualData));
-                    INPUT[] inputList = {input};
-                    SendInput(1, inputList, Marshal.SizeOf(input));
-                    //ricostruisci l'INPUT dal buffer di byte e utilizza la SendInput;
-                }
+                ThreadPool.QueueUserWorkItem(new WaitCallback(HandleInput), new List<Object>(){bytesReadNum, data, client});
+            }
+        }
+
+
+        private static void HandleInput(Object obj)
+        {
+            List<Object> objList = (List<Object>) obj;
+            int bytesReadNum = (int)objList[0];
+            byte[] data = (byte[])objList[1];
+            Socket socket = ((Client) objList[2]).GetSocket();
+            if (bytesReadNum > 0)
+            {
+                byte[] actualData = new byte[bytesReadNum];
+                System.Buffer.BlockCopy(data, 0, actualData, 0, bytesReadNum);
+                string json = Encoding.Unicode.GetString(actualData);
+                Console.WriteLine(json);
+                INPUT input = JsonConvert.DeserializeObject<INPUT>(json);
+                server.Send(new byte[] { 0 }, socket);
+                INPUT[] inputList = { input };
+                SendInput(1, inputList, Marshal.SizeOf(input));
             }
         }
 
