@@ -274,11 +274,12 @@ namespace PDSProject
                 string json = Encoding.Unicode.GetString(actualData);
                 Console.WriteLine(json);
                 INPUT input = JsonConvert.DeserializeObject<INPUT>(json);
-                float screenW = System.Windows.Forms.Screen.PrimaryScreen.Bounds.Width;
-                float screenH = System.Windows.Forms.Screen.PrimaryScreen.Bounds.Height;
-                input.mi.dx = (UInt16)Math.Round(input.mi.dx * (65535 / screenW), 0);
-                input.mi.dy = (UInt16)Math.Round(input.mi.dy * (65535 / screenH), 0);
-
+                if (input.type == 0) { 
+                    float screenW = System.Windows.Forms.Screen.PrimaryScreen.Bounds.Width;
+                    float screenH = System.Windows.Forms.Screen.PrimaryScreen.Bounds.Height;
+                    input.mi.dx = (UInt16)Math.Round(input.mi.dx * (65535 / screenW), 0);
+                    input.mi.dy = (UInt16)Math.Round(input.mi.dy * (65535 / screenH), 0);
+                }
                 server.Send(new byte[] { 0 }, socket);
                 INPUT[] inputList = { input };
                 SendInput(1, inputList, Marshal.SizeOf(input));
