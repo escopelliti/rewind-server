@@ -34,16 +34,16 @@ namespace Protocol
             public MOUSEINPUT mi;
             [FieldOffset(4)]
             public KEYBDINPUT ki;
-            //[FieldOffset(4)]
-            //public HARDWAREINPUT hi;
+            [FieldOffset(4)]
+            public HARDWAREINPUT hi;
         }
 
    
         [StructLayout(LayoutKind.Sequential)]
         struct MOUSEINPUT
         {
-            public UInt16 dx;
-            public UInt16 dy;
+            public UInt32 dx;
+            public UInt32 dy;
             public UInt32 mouseData;
             public MouseFlag dwFlags;
             public UInt32 time;
@@ -60,13 +60,13 @@ namespace Protocol
             public IntPtr dwExtraInfo;
         }
 
-        //[StructLayout(LayoutKind.Sequential)]
-        //public struct HARDWAREINPUT
-        //{
-        //    public int uMsg;
-        //    public short wParamL;
-        //    public short wParamH;
-        //}
+        [StructLayout(LayoutKind.Sequential)]
+        public struct HARDWAREINPUT
+        {
+            public UInt32 uMsg;
+            public UInt16 wParamL;
+            public UInt16 wParamH;
+        }
     }
 
 
