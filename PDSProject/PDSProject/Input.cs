@@ -42,11 +42,11 @@ namespace Protocol
         [StructLayout(LayoutKind.Sequential)]
         struct MOUSEINPUT
         {
-            public int dx;
-            public int dy;
-            public int mouseData;
+            public UInt16 dx;
+            public UInt16 dy;
+            public UInt32 mouseData;
             public MouseFlag dwFlags;
-            public int time;
+            public UInt32 time;
             public IntPtr dwExtraInfo;
         }
 
