@@ -8,7 +8,7 @@ using System.Collections.Concurrent;
 
 namespace Protocol
 {
-    static class ProtocolUtils
+    public class ProtocolUtils
     {
         public static ConcurrentDictionary<string, string> protocolDictionary = new ConcurrentDictionary<string, string>();
 
@@ -24,9 +24,18 @@ namespace Protocol
         public const string SET_CLIPBOARD_IMAGE = "CLIPBOARD_IMAGE";
         public const string TRANSFER_FILES = "BEGIN_TRANSFER_FILES";
         public const string TRANSFER_IMAGE = "BEGIN_TRANSFER_IMAGE";
-        
+        public const string GET_CLIPBOARD_DIMENSION = "GET_CLIPBOARD_DIMENSION";
+        public const string GET_CLIPBOARD_CONTENT = "GET_CLIPBOARD_CONTENT";
+        public const string GET_CLIPBOARD_FILES = "GET_CLIPBOARD_FILES";
+        public const string SET_RESET_FOCUS = "SET_RESET_FOCUS";
+        public const string FOCUS_ON = "FOCUS_ON";
+        public const string FOCUS_OFF = "FOCUS_OFF";
+
         public const string TMP_IMAGE_FILE = ".\\tmp.jpg";
         public const string TMP_DIR = ".\\tmp\\";
+
+
+        public const long CLIBPOARD_DIM_THRESHOLD = 1024 * 1024;
 
         public struct FileStruct
         {
@@ -42,5 +51,7 @@ namespace Protocol
             protocolDictionary[SET_CLIPBOARD_IMAGE] = TRANSFER_IMAGE;
             protocolDictionary[TRANSFER_IMAGE] = TMP_IMAGE_FILE;
         }
+
+
     }
 }

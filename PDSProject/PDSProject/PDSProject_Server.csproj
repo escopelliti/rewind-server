@@ -84,8 +84,12 @@
     <Compile Include="Channel.cs" />
     <Compile Include="Client.cs" />
     <Compile Include="ClientServerCommunicationManager.cs" />
+    <Compile Include="ClipboardMgr.cs" />
+    <Compile Include="ClipboardPOCO.cs" />
+    <Compile Include="Configuration.cs" />
     <Compile Include="ConnectionHandler.cs" />
     <Compile Include="Input.cs" />
+    <Compile Include="JSONFactory.cs" />
     <Compile Include="MainForm.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -93,7 +97,13 @@
       <DependentUpon>MainForm.cs</DependentUpon>
     </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Properties\Resources.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
     <Compile Include="ProtocolUtils.cs" />
+    <Compile Include="RequestEventArgs.cs" />
     <Compile Include="ServerCommunicationManager.cs" />
     <Compile Include="ServerDispatcher.cs" />
     <Compile Include="StandardRequest.cs" />
@@ -105,6 +115,10 @@
   <ItemGroup>
     <EmbeddedResource Include="MainForm.resx">
       <DependentUpon>MainForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Properties\Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>

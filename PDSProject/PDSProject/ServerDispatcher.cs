@@ -9,6 +9,7 @@ using CommunicationLibrary;
 using System.IO;
 using System.Collections.Concurrent;
 
+using Clipboard;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Protocol;
@@ -20,7 +21,8 @@ namespace PDSProject
     class ServerDispatcher
     {
 
-        private static ServerCommunicationManager server;
+        public static ServerCommunicationManager server { get; set; }
+        private ClipboardMgr clipboardMgr;
         public delegate void ChangeClipboardEventHandler(Object sender, Object param);
         public event ChangeClipboardEventHandler clipboardHandler;
         private static Dictionary<string, Delegate> dispatch;
@@ -43,6 +45,18 @@ namespace PDSProject
         private static System.Collections.Specialized.StringCollection fileDropList;
 
         private static ConcurrentDictionary<string, RequestState> requestDictionary;
+
+        public delegate void GetClipboardContentEventHandler(Object sender, Object param);
+        public event GetClipboardContentEventHandler getClipboardContentHandler;
+
+        public delegate void GetClipboardDimensionEventHandler(Object sender, Object param);
+        public event GetClipboardDimensionEventHandler getClipboardDimensionHandler;
+
+        public delegate void FileToTransferEventHandler(Object sender, Object param);
+        public event FileToTransferEventHandler fileTotransferHandler;
+
+        public delegate void SetActiveServerEventHandler(Object sender, Object param);
+        public event SetActiveServerEventHandler setActiveServerHandler;
 
         public ServerDispatcher (ServerCommunicationManager runningServer) {
             server = runningServer;
@@ -72,6 +86,56 @@ namespace PDSProject
 
             clipboardImageHandler += ReceiveDataForClipboard;
             dispatch[ProtocolUtils.TRANSFER_IMAGE] = new Action<Object>(obj => clipboardImageHandler(this, obj));
+
+            //
+            getClipboardDimensionHandler += this.clipboardMgr.OnGetDimensionRequest;
+            dispatch[ProtocolUtils.GET_CLIPBOARD_DIMENSION] = new Action<Object>(obj => OnGetClipboardDimension(new RequestEventArgs((RequestState) obj)));
+
+            //
+            getClipboardContentHandler += this.clipboardMgr.OnGetContentRequest;
+            dispatch[ProtocolUtils.GET_CLIPBOARD_CONTENT] = new Action<Object>(obj => OnGetClipboardContent(new RequestEventArgs((RequestState) obj)));
+
+            fileTotransferHandler += this.clipboardMgr.OnFileToTransferEvent;
+            dispatch[ProtocolUtils.GET_CLIPBOARD_FILES] = new Action<Object>(obj => OnFileToTransfer(new RequestEventArgs((RequestState) obj)));
+
+            setActiveServerHandler += MainForm.OnSetServerFocus;
+            dispatch[ProtocolUtils.SET_RESET_FOCUS] = new Action<Object>(obj => OnSetServerFocus(new RequestEventArgs((RequestState)obj)));
+        }
+
+        private void OnSetServerFocus(RequestEventArgs ea)
+        {
+            SetActiveServerEventHandler handler = this.setActiveServerHandler;
+            if (handler != null)
+            {
+                handler(this, ea);
+            }
+        }
+
+        private void OnFileToTransfer(RequestEventArgs ea)
+        {
+            FileToTransferEventHandler handler = this.fileTotransferHandler;
+            if (handler != null)
+            {
+                handler(this, ea);
+            }
+        }
+
+        private void OnGetClipboardContent(RequestEventArgs ea)
+        {
+            GetClipboardContentEventHandler handler = this.getClipboardContentHandler;
+            if (handler != null)
+            {
+                handler(this, ea.requestState);
+            }
+        }
+
+        private void OnGetClipboardDimension(RequestEventArgs ea)
+        {
+            GetClipboardDimensionEventHandler handler = this.getClipboardDimensionHandler;
+            if (handler != null)
+            {
+                handler(this, ea.requestState);
+            }
         }
 
         private static void SendAckToClient(Object source, Object param)
@@ -113,7 +177,6 @@ namespace PDSProject
             using (var ms = new MemoryStream(File.ReadAllBytes(filename)))
             {
                 image = Image.FromStream(ms);
-
             }
             File.Delete(filename);
             MainForm.mainForm.Invoke(MainForm.clipboardImageDelegate, image);  
@@ -185,36 +248,7 @@ namespace PDSProject
                     CreateClipboardContent((JObject)contentJson[prop.Key], prop.Key);
                     fileDropList.Add(ProtocolUtils.TMP_DIR + prop.Key);
                 }
-            }
-            //foreach( IEnumerable<JToken> item in requestState.stdRequest[ProtocolUtils.CONTENT].Values()) {
-            //    Console.WriteLine(item);
-            //    Console.WriteLine(item.GetType());
-            //    Console.WriteLine(item.Values().ElementAt(0));
-            //}
-            //foreach (var prop in ((JObject) requestState.stdRequest["content"])) 
-            //    //Console.WriteLine(prop.Value.Type);
-            //    //Console.WriteLine(prop.Key);
-            //foreach (var item in inner)
-            //{
-            //    JProperty asd = item.First.Value<JProperty>();
-            //    Console.WriteLine(asd.Name);
-            //}
-            //JProperty prop = (JProperty)token;
-            //Console.WriteLine(prop.Name);
-
-            
-            
-            //aggiornare per il caso delle directory
-            //Request requestWithFiles = (Request)param;
-            //IEnumerable<XElement> filesElement = requestWithFiles.xRequest.Descendants(ProtocolUtils.FILE);
-            //foreach (XElement fileElement in filesElement)
-            //{
-            //    ProtocolUtils.FileStruct fileStruct = new ProtocolUtils.FileStruct();
-            //    fileStruct.name = fileElement.Attribute(ProtocolUtils.NAME).Value;
-            //    fileStruct.size = Convert.ToInt64(fileElement.Descendants(ProtocolUtils.SIZE).ElementAt(0).Value);
-            //    filesToReceive.Add(fileStruct);
-            //}
-
+            }            
         }
 
         private void CreateClipboardContent(JObject contentJson, string dir) 
