@@ -7,7 +7,7 @@ using System.Net.Sockets;
 
 namespace PDSProject
 {
-    class Client
+    public class Client
     {
 
         private Socket socket;

@@ -61,11 +61,12 @@ namespace PDSProject
         public ServerDispatcher (ServerCommunicationManager runningServer) {
             server = runningServer;
             filesToReceive = new List<ProtocolUtils.FileStruct>();
-            SetupDispatcher();
-            ProtocolUtils.InitProtocolDictionary();
             fileDropList = new System.Collections.Specialized.StringCollection();
             currentFileNum = 0;
-            requestDictionary = new ConcurrentDictionary<string, RequestState>();
+            requestDictionary = new ConcurrentDictionary<string, RequestState>();           
+            clipboardMgr = new ClipboardMgr();
+            ProtocolUtils.InitProtocolDictionary();
+            SetupDispatcher();
         }
 
         private void SetupDispatcher()
@@ -88,14 +89,14 @@ namespace PDSProject
             dispatch[ProtocolUtils.TRANSFER_IMAGE] = new Action<Object>(obj => clipboardImageHandler(this, obj));
 
             //
-            getClipboardDimensionHandler += this.clipboardMgr.OnGetDimensionRequest;
+            getClipboardDimensionHandler += clipboardMgr.OnGetDimensionRequest;
             dispatch[ProtocolUtils.GET_CLIPBOARD_DIMENSION] = new Action<Object>(obj => OnGetClipboardDimension(new RequestEventArgs((RequestState) obj)));
 
             //
-            getClipboardContentHandler += this.clipboardMgr.OnGetContentRequest;
+            getClipboardContentHandler += clipboardMgr.OnGetContentRequest;
             dispatch[ProtocolUtils.GET_CLIPBOARD_CONTENT] = new Action<Object>(obj => OnGetClipboardContent(new RequestEventArgs((RequestState) obj)));
 
-            fileTotransferHandler += this.clipboardMgr.OnFileToTransferEvent;
+            fileTotransferHandler += clipboardMgr.OnFileToTransferEvent;
             dispatch[ProtocolUtils.GET_CLIPBOARD_FILES] = new Action<Object>(obj => OnFileToTransfer(new RequestEventArgs((RequestState) obj)));
 
             setActiveServerHandler += MainForm.OnSetServerFocus;
@@ -335,10 +336,10 @@ namespace PDSProject
                 {
                     byte[] actualData = new byte[bytesReadNum];
                     System.Buffer.BlockCopy(data, 0, actualData, 0, bytesReadNum);
-                    byte[] byteToken = new byte[16];
-                    System.Buffer.BlockCopy(actualData, 0, byteToken, 0, 16);
-                    byte[] requestData = new byte[bytesReadNum - 16];
-                    System.Buffer.BlockCopy(actualData, 16, requestData, 0, bytesReadNum - 16);
+                    byte[] byteToken = new byte[ProtocolUtils.TOKEN_DIM];
+                    System.Buffer.BlockCopy(actualData, 0, byteToken, 0, ProtocolUtils.TOKEN_DIM);
+                    byte[] requestData = new byte[bytesReadNum - ProtocolUtils.TOKEN_DIM];
+                    System.Buffer.BlockCopy(actualData, ProtocolUtils.TOKEN_DIM, requestData, 0, bytesReadNum - ProtocolUtils.TOKEN_DIM);
                     string token = Convert.ToBase64String(byteToken);
                                        
                    
@@ -377,7 +378,7 @@ namespace PDSProject
         }
     }
 
-    struct RequestState
+    public struct RequestState
     {
         public Client client;
         public byte[] data;

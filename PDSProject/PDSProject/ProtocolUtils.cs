@@ -34,6 +34,7 @@ namespace Protocol
         public const string TMP_IMAGE_FILE = ".\\tmp.jpg";
         public const string TMP_DIR = ".\\tmp\\";
 
+        public const ushort TOKEN_DIM = 16;
 
         public const long CLIBPOARD_DIM_THRESHOLD = 1024 * 1024;
 
