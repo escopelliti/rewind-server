@@ -188,12 +188,14 @@ namespace PDSProject
         private void MoveByteToFiles(Object source, Object param)
         {
             RequestState request = (RequestState)param;
+            byte[] actualData = new byte[request.data.Length - ProtocolUtils.TOKEN_DIM];
+            System.Buffer.BlockCopy(request.data, ProtocolUtils.TOKEN_DIM, actualData, 0, actualData.Length); 
             if (currentFileNum < filesToReceive.Count)
             {
                 ProtocolUtils.FileStruct currentFile = filesToReceive.ElementAt(currentFileNum);             
                 using (var stream = new FileStream(ProtocolUtils.TMP_DIR + currentFile.dir + currentFile.name, FileMode.Append))
                 {
-                    stream.Write(request.data, 0, request.data.Length);
+                    stream.Write(actualData, 0, actualData.Length);
                     stream.Close();
                     server.Send(Convert.FromBase64String(request.token), request.client.GetSocket());
                 }
@@ -208,6 +210,9 @@ namespace PDSProject
                             throw new Exception("Request not present in the dictionary");
                         }
                         MainForm.mainForm.Invoke(MainForm.clipboardFilesDelegate, fileDropList);
+                        currentFileNum = 0;
+                        filesToReceive.Clear();
+                        fileDropList.Clear();
                     }
                 }
             }
@@ -229,7 +234,8 @@ namespace PDSProject
 
 
         private void NewClipboardFileToPaste(Object source, Object param)
-        {   
+        {
+            String fullTmpPath = Path.GetFullPath(ProtocolUtils.TMP_DIR);
             //leggere il JSON e preparare il lavoro per i file e le cartelle che arrivano
             DeleteFileDirContent(ProtocolUtils.TMP_DIR);
             RequestState requestState = (RequestState) param;
@@ -241,7 +247,7 @@ namespace PDSProject
             filesToReceive.AddRange(files);
             foreach (ProtocolUtils.FileStruct fileStruct in files)
             {
-                fileDropList.Add(ProtocolUtils.TMP_DIR + fileStruct.name);
+                fileDropList.Add(fullTmpPath + fileStruct.name);
             }
 
             foreach (var prop in contentJson) {     
@@ -249,16 +255,17 @@ namespace PDSProject
                 {
                     Directory.CreateDirectory(ProtocolUtils.TMP_DIR + prop.Key);
                     CreateClipboardContent((JObject)contentJson[prop.Key], prop.Key);
-                    fileDropList.Add(ProtocolUtils.TMP_DIR + prop.Key);
+                    fileDropList.Add(fullTmpPath + prop.Key);
                 }
-            }            
+            }
+            server.Send(new byte[16], requestState.client.GetSocket());
         }
 
         private void CreateClipboardContent(JObject contentJson, string dir) 
         {
             List<ProtocolUtils.FileStruct> files = new List<ProtocolUtils.FileStruct>();
             files = JsonConvert.DeserializeObject<List<ProtocolUtils.FileStruct>>(contentJson[ProtocolUtils.FILE].ToString());
-            filesToReceive.Concat(files);
+            filesToReceive.AddRange(files);
             foreach (var prop in contentJson) {
                 if(prop.Key != ProtocolUtils.FILE) {
                     Directory.CreateDirectory(ProtocolUtils.TMP_DIR + dir + "\\" + prop.Key);
@@ -350,7 +357,11 @@ namespace PDSProject
                     request.data = requestData;
                     request.token = token;
 
-                    ThreadPool.QueueUserWorkItem(new WaitCallback(DispatchRequest), request);       
+
+                    Thread thread = new Thread(() => DispatchRequest(request));
+                    thread.SetApartmentState(ApartmentState.STA);
+                    thread.Start();
+                    //ThreadPool.QueueUserWorkItem(new WaitCallback(DispatchRequest), request);       
                 }                   
             } 
         }
@@ -358,7 +369,8 @@ namespace PDSProject
 
         private static void DispatchRequest(object request)
         {
-            RequestState newRequest = (RequestState)request;                       
+            RequestState newRequest = (RequestState)request;
+            Console.WriteLine(newRequest.data.Length);          
             if (requestDictionary.ContainsKey(newRequest.token))
             {
                 RequestState oldRequest = requestDictionary[newRequest.token];
@@ -370,6 +382,7 @@ namespace PDSProject
             else
             {                
                 JObject receivedJson = JObject.Parse(Encoding.Unicode.GetString(newRequest.data));
+                Console.WriteLine(newRequest.data.Length);
                 string type = receivedJson[ProtocolUtils.TYPE].ToString();
                 string requestType = ProtocolUtils.protocolDictionary[type];
                 newRequest.type = requestType;

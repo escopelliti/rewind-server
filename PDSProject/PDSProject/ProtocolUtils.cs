@@ -51,6 +51,13 @@ namespace Protocol
             protocolDictionary[SET_CLIPBOARD_FILES] = TRANSFER_FILES;
             protocolDictionary[SET_CLIPBOARD_IMAGE] = TRANSFER_IMAGE;
             protocolDictionary[TRANSFER_IMAGE] = TMP_IMAGE_FILE;
+
+            protocolDictionary[GET_CLIPBOARD_DIMENSION] = GET_CLIPBOARD_DIMENSION;
+            protocolDictionary[GET_CLIPBOARD_CONTENT] = GET_CLIPBOARD_CONTENT;
+            protocolDictionary[GET_CLIPBOARD_FILES] = GET_CLIPBOARD_FILES;
+            protocolDictionary[SET_RESET_FOCUS] = SET_RESET_FOCUS;
+            protocolDictionary[FOCUS_ON] = FOCUS_ON;
+            protocolDictionary[FOCUS_OFF] = FOCUS_OFF;
         }
 
 

@@ -33,6 +33,7 @@ namespace PDSProject
         public static MainForm mainForm;
         private ushort[] portRange;
         private BackgroundWorker bw;
+        private EventHandler eventHandler;
         
         public MainForm()
         {
@@ -121,21 +122,23 @@ namespace PDSProject
             string content = rs.stdRequest[Protocol.ProtocolUtils.CONTENT].ToString();
             if (content == Protocol.ProtocolUtils.FOCUS_ON)
             {
-                timer.Tick += new EventHandler(Each_Tick);
+                timer.Tick += eventHandler;
                 feedbackNotifyIcon.Visible = true;
             }
             else
             {
                 feedbackNotifyIcon.Visible = false;
-                timer.Tick -= new EventHandler(Each_Tick);
+                timer.Tick -= eventHandler;
             }                        
         }
 
         public void StartTimer()
         {
             timer = new System.Windows.Forms.Timer();
-            timer.Interval = 500;            
+            timer.Interval = 500;
+            eventHandler += Each_Tick;
             timer.Start();
+
         }
 
         public void Each_Tick(object o, EventArgs sender)
@@ -146,9 +149,9 @@ namespace PDSProject
         public static ClipboardPOCO GetClipboardContent()
         {
             ClipboardPOCO clipboardPOCO = new ClipboardPOCO();
-            if (System.Windows.Forms.Clipboard.ContainsFileDropList())
+            if (System.Windows.Clipboard.ContainsFileDropList())
             {
-                clipboardPOCO.content = System.Windows.Forms.Clipboard.GetFileDropList();
+                clipboardPOCO.content = System.Windows.Clipboard.GetFileDropList();
                 clipboardPOCO.contentType = ClipboardPOCO.FILE_DROP_LIST;
                 return clipboardPOCO;
             }
@@ -176,7 +179,7 @@ namespace PDSProject
             portRange[counter] = startingPort;
         }
 
-        [STAThread]
+        [STAThreadAttribute]
         public static void Main()
         {            
             mainForm = new MainForm();
@@ -207,7 +210,7 @@ namespace PDSProject
 
         private void SetClipboardFileDropList(StringCollection fileDropList)
         {
-            System.Windows.Forms.Clipboard.SetFileDropList(fileDropList);
+            System.Windows.Clipboard.SetFileDropList(fileDropList);
         }
 
         private void button2_Click(object sender, EventArgs e)

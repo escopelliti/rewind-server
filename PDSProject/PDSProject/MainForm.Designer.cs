@@ -128,6 +128,7 @@
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "Configurazione";
             this.FormClosing += MainForm_WindowClosing;
+            this.MouseHover += MainForm_MouseHover;
             
             this.ResumeLayout(false);
             this.PerformLayout();
