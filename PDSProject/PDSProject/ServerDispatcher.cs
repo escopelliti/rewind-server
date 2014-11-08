@@ -23,6 +23,7 @@ namespace PDSProject
 
         public static ServerCommunicationManager server { get; set; }
         private ClipboardMgr clipboardMgr;
+        private MainForm mainForm;
         public delegate void ChangeClipboardEventHandler(Object sender, Object param);
         public event ChangeClipboardEventHandler clipboardHandler;
         private static Dictionary<string, Delegate> dispatch;
@@ -58,8 +59,9 @@ namespace PDSProject
         public delegate void SetActiveServerEventHandler(Object sender, Object param);
         public event SetActiveServerEventHandler setActiveServerHandler;
 
-        public ServerDispatcher (ServerCommunicationManager runningServer) {
+        public ServerDispatcher (ServerCommunicationManager runningServer, MainForm mainWindow) {
             server = runningServer;
+            this.mainForm = mainWindow;
             filesToReceive = new List<ProtocolUtils.FileStruct>();
             fileDropList = new System.Collections.Specialized.StringCollection();
             currentFileNum = 0;
@@ -99,7 +101,7 @@ namespace PDSProject
             fileTotransferHandler += clipboardMgr.OnFileToTransferEvent;
             dispatch[ProtocolUtils.GET_CLIPBOARD_FILES] = new Action<Object>(obj => OnFileToTransfer(new RequestEventArgs((RequestState) obj)));
 
-            setActiveServerHandler += MainForm.OnSetServerFocus;
+            setActiveServerHandler += mainForm.OnSetServerFocus;
             dispatch[ProtocolUtils.SET_RESET_FOCUS] = new Action<Object>(obj => OnSetServerFocus(new RequestEventArgs((RequestState)obj)));
         }
 

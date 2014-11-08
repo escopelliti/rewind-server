@@ -127,13 +127,12 @@
             this.Name = "MainForm";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "Configurazione";
+            this.FormClosing += MainForm_WindowClosing;
+            
             this.ResumeLayout(false);
             this.PerformLayout();
-            this.MouseHover += MainForm_MouseHover;
 
         }
-
-        
 
         #endregion
 

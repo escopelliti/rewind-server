@@ -18,11 +18,11 @@ namespace CommunicationLibrary
         private ServerDispatcher dispatcher;
          
         //ci dovra essere una struttura che gestisce tutte le connessioni/socket in entrata
-        public ConnectionHandler()
+        public ConnectionHandler(MainForm mainForm)
         {
             serverChannel = new Channel();
             this.server = new ServerCommunicationManager();
-            dispatcher = new ServerDispatcher(server);
+            dispatcher = new ServerDispatcher(server, mainForm);
             serverChannel.SetDataSocket(server.CreateSocket(ProtocolType.Tcp));
             serverChannel.SetCmdSocket(server.CreateSocket(ProtocolType.Tcp));
         }

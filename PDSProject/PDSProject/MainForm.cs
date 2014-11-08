@@ -17,6 +17,13 @@ namespace PDSProject
 {
     public partial class MainForm : Form
     {
+        private NotifyIcon mainNotifyIcon;
+        private NotifyIcon feedbackNotifyIcon;
+        private FormWindowState lastWindowState; 
+        private static System.Windows.Forms.Timer timer;
+        private bool exit = false;
+        private System.Windows.Forms.ContextMenu contextMenu1;
+        private System.Windows.Forms.MenuItem menuItem1;
         public delegate void SetTextToClipboard(string stringData);
         public delegate void SetFileDropListClipboard(StringCollection fileDropList);
         public delegate void SetImageToClipboard(Image image);
@@ -34,16 +41,79 @@ namespace PDSProject
             clipboardFilesDelegate += new SetFileDropListClipboard(SetClipboardFileDropList);
             clipboardImageDelegate += new SetImageToClipboard(SetClipboardImage);
 
+            StartBackgroundWorker();
+            InitTrayIcon();
+            StartTimer();
+            //LEGGI DAL FILE DI CONFIGURAZIONE SE ESISTE ALTRIMENTI CREALO DI DEFAULT
+        }
+
+        private void StartBackgroundWorker()
+        {
             bw = new BackgroundWorker();
             bw.WorkerReportsProgress = true;
             bw.WorkerSupportsCancellation = true;
             bw.DoWork += new DoWorkEventHandler(CreateComboboxRange);
             bw.RunWorkerCompleted += new RunWorkerCompletedEventHandler(FillsCombobox);
-
-            //LEGGI DAL FILE DI CONFIGURAZIONE SE ESISTE ALTRIMENTI CREALO DI DEFAULT
         }
 
-        public static void OnSetServerFocus(Object obj, Object param)
+        private void InitTrayIcon()
+        {
+
+            this.contextMenu1 = new System.Windows.Forms.ContextMenu();
+            this.menuItem1 = new System.Windows.Forms.MenuItem();
+
+            // Initialize contextMenu1 
+            this.contextMenu1.MenuItems.AddRange(new System.Windows.Forms.MenuItem[] { this.menuItem1 });
+
+            // Initialize menuItem1 
+            this.menuItem1.Index = 0;
+            this.menuItem1.Text = "Exit";
+            this.menuItem1.Click += new System.EventHandler(this.menuItem1_Click);
+
+
+            mainNotifyIcon = new System.Windows.Forms.NotifyIcon();
+            mainNotifyIcon.Icon = new System.Drawing.Icon("..\\..\\..\\resources\\computer.ico");
+            mainNotifyIcon.MouseDoubleClick += new System.Windows.Forms.MouseEventHandler(MyNotifyIcon_MouseDoubleClick);
+
+            mainNotifyIcon.ContextMenu = this.contextMenu1;
+
+            feedbackNotifyIcon = new System.Windows.Forms.NotifyIcon();
+            feedbackNotifyIcon.Icon = new System.Drawing.Icon("..\\..\\..\\resources\\blinkingIcon.ico");
+        }
+
+        private void Window_StateChanged(EventArgs e)
+        {
+            if (this.WindowState == FormWindowState.Minimized)
+            {
+                this.ShowInTaskbar = false;
+                mainNotifyIcon.BalloonTipTitle = "Minimize Sucessful";
+                mainNotifyIcon.BalloonTipText = "Minimized the app ";
+                mainNotifyIcon.ShowBalloonTip(400);
+                mainNotifyIcon.Visible = true;
+            }
+            else if (this.WindowState == FormWindowState.Normal)
+            {
+                mainNotifyIcon.Visible = false;
+                this.ShowInTaskbar = true;
+            }
+        }
+
+        protected override void OnClientSizeChanged(EventArgs e)
+        {
+            if (this.WindowState != lastWindowState)
+            {
+                lastWindowState = this.WindowState;
+                Window_StateChanged(e);
+            }
+            base.OnClientSizeChanged(e);
+        }        
+
+        private void MyNotifyIcon_MouseDoubleClick(object sender, System.Windows.Forms.MouseEventArgs e)
+        {
+            this.WindowState = FormWindowState.Normal;
+        }
+     
+        public void OnSetServerFocus(Object obj, Object param)
         {
             RequestEventArgs rea = (RequestEventArgs)param;
             RequestState rs = (RequestState)rea.requestState;
@@ -51,12 +121,26 @@ namespace PDSProject
             string content = rs.stdRequest[Protocol.ProtocolUtils.CONTENT].ToString();
             if (content == Protocol.ProtocolUtils.FOCUS_ON)
             {
-                ////    myDispatcherTimer.Tick += new EventHandler(Each_Tick);
+                timer.Tick += new EventHandler(Each_Tick);
+                feedbackNotifyIcon.Visible = true;
             }
             else
             {
-                ////    myDispatcherTimer.Tick += new EventHandler(Each_Tick);
+                feedbackNotifyIcon.Visible = false;
+                timer.Tick -= new EventHandler(Each_Tick);
             }                        
+        }
+
+        public void StartTimer()
+        {
+            timer = new System.Windows.Forms.Timer();
+            timer.Interval = 500;            
+            timer.Start();
+        }
+
+        public void Each_Tick(object o, EventArgs sender)
+        {
+            feedbackNotifyIcon.Visible = !feedbackNotifyIcon.Visible;
         }
 
         public static ClipboardPOCO GetClipboardContent()
@@ -94,10 +178,10 @@ namespace PDSProject
 
         [STAThread]
         public static void Main()
-        {
-            ConnectionHandler handler = new ConnectionHandler();
-            handler.Listen();
+        {            
             mainForm = new MainForm();
+            ConnectionHandler handler = new ConnectionHandler(mainForm);
+            handler.Listen();
             Application.Run(mainForm);
         }
 
@@ -149,6 +233,21 @@ namespace PDSProject
                 MessageBox.Show("Inserisci una password per continuare!");
             } 
             
+        }
+
+        private void menuItem1_Click(object Sender, EventArgs e)
+        {
+            exit = true;
+            this.Close();
+        }
+
+        private void MainForm_WindowClosing(object sender, System.ComponentModel.CancelEventArgs e)
+        {
+            if (!exit)
+            {
+                this.WindowState = FormWindowState.Minimized;
+                e.Cancel = true;
+            }
         }
     }
 }
