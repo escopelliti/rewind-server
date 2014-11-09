@@ -107,6 +107,7 @@
     <Compile Include="RequestEventArgs.cs" />
     <Compile Include="ServerCommunicationManager.cs" />
     <Compile Include="ServerDispatcher.cs" />
+    <Compile Include="ServiceRegister.cs" />
     <Compile Include="StandardRequest.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -142,6 +143,17 @@
   <ItemGroup>
     <Content Include="blinkingIcon.ico" />
     <Content Include="computer.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <COMReference Include="Bonjour">
+      <Guid>{18FBED6D-F2B7-4EC8-A4A4-46282E635308}</Guid>
+      <VersionMajor>1</VersionMajor>
+      <VersionMinor>0</VersionMinor>
+      <Lcid>0</Lcid>
+      <WrapperTool>tlbimp</WrapperTool>
+      <Isolated>False</Isolated>
+      <EmbedInteropTypes>True</EmbedInteropTypes>
+    </COMReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

@@ -42,6 +42,7 @@ namespace PDSProject
             clipboardFilesDelegate += new SetFileDropListClipboard(SetClipboardFileDropList);
             clipboardImageDelegate += new SetImageToClipboard(SetClipboardImage);
 
+            Discovery.ServiceRegister sr = new Discovery.ServiceRegister();
             StartBackgroundWorker();
             InitTrayIcon();
             StartTimer();
