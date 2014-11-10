@@ -13,6 +13,8 @@ namespace CommunicationLibrary
         public Socket CreateSocket(ProtocolType protocolType)
         {
             Socket socket = new Socket(AddressFamily.InterNetworkV6, SocketType.Stream, protocolType);
+            socket.SendBufferSize = 64 * 1024;
+            socket.ReceiveBufferSize = 64 * 1024;
             return socket;
         }
 
