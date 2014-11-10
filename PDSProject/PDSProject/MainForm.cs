@@ -130,7 +130,8 @@ namespace PDSProject
             {
                 feedbackNotifyIcon.Visible = false;
                 timer.Tick -= eventHandler;
-            }                        
+            }
+                       
         }
 
         public void StartTimer()

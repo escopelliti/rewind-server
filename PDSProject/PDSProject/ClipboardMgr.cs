@@ -82,7 +82,8 @@ namespace Clipboard
                     ServerDispatcher.server.Send(byteToSend, requestState.client.GetSocket());
                     ResetClassValue();
                     SetFilesToSendFromDropList();
-                    OnFileToTransferEvent(this, new RequestEventArgs(requestState));                    
+                    //ServerDispatcher.server.Receive(new byte[16], requestState.client.GetSocket());
+                    //OnFileToTransferEvent(this, new RequestEventArgs(requestState));                    
                     break;
             }
         }
@@ -101,17 +102,19 @@ namespace Clipboard
                 if (File.Exists(s))
                 {
                     this.filesToSend.Add(s);
+                   //forse si puo rimuovere
                 }
-                else
+            }
+            foreach (String s in fileDropListArray) {
+                if (!File.Exists(s))
                 {
-                    String[] subFiles = Directory.GetFiles(s, "*.*", SearchOption.AllDirectories);
+                     String[] subFiles = Directory.GetFiles(s, "*.*", SearchOption.AllDirectories);
                     foreach(String file in subFiles)
                     {
                         this.filesToSend.Add(file);
                     }
                 }
-            }
-
+            }             
         }
 
         public void OnFileToTransferEvent(Object sender, Object ea)
@@ -120,6 +123,7 @@ namespace Clipboard
             RequestState rs = (RequestState) rea.requestState;
             if (currentFileNum == this.filesToSend.Count)
             {
+                ServerDispatcher.server.Send(new byte[16], rs.client.GetSocket());
                 return;
             }
             String file = this.filesToSend[currentFileNum];
@@ -155,7 +159,6 @@ namespace Clipboard
                             }                                                        
                         }
                         input.Close();
-                        //stream.Close();
                     }
                 
             }

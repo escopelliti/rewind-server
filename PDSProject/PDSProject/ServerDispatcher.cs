@@ -111,6 +111,7 @@ namespace PDSProject
             if (handler != null)
             {
                 handler(this, ea);
+                server.Send(new byte[16], ea.requestState.client.GetSocket());
             }
         }
 
@@ -129,6 +130,11 @@ namespace PDSProject
             if (handler != null)
             {
                 handler(this, ea.requestState);
+                RequestState value = new RequestState();
+                if (!requestDictionary.TryRemove(ea.requestState.token, out value))
+                {//custom exception would be better than this
+                    throw new Exception("Request not present in the dictionary");
+                }
             }
         }
 
@@ -243,8 +249,15 @@ namespace PDSProject
             JObject contentJson = (JObject)requestState.stdRequest[ProtocolUtils.CONTENT];
 
             List<ProtocolUtils.FileStruct> files = new List<ProtocolUtils.FileStruct>();
-            files = JsonConvert.DeserializeObject<List<ProtocolUtils.FileStruct>>(contentJson[ProtocolUtils.FILE].ToString());
-            filesToReceive.AddRange(files);
+
+            try
+            {
+                files = JsonConvert.DeserializeObject<List<ProtocolUtils.FileStruct>>(contentJson[ProtocolUtils.FILE].ToString());
+                filesToReceive.AddRange(files);
+            }
+            catch (NullReferenceException ex)
+            {
+            }
             foreach (ProtocolUtils.FileStruct fileStruct in files)
             {
                 fileDropList.Add(fullTmpPath + fileStruct.name);
@@ -264,12 +277,19 @@ namespace PDSProject
         private void CreateClipboardContent(JObject contentJson, string dir) 
         {
             List<ProtocolUtils.FileStruct> files = new List<ProtocolUtils.FileStruct>();
-            files = JsonConvert.DeserializeObject<List<ProtocolUtils.FileStruct>>(contentJson[ProtocolUtils.FILE].ToString());
-            filesToReceive.AddRange(files);
+            try
+            {
+                files = JsonConvert.DeserializeObject<List<ProtocolUtils.FileStruct>>(contentJson[ProtocolUtils.FILE].ToString());
+                filesToReceive.AddRange(files);
+            }
+            catch (NullReferenceException ex)
+            {
+
+            }
             foreach (var prop in contentJson) {
                 if(prop.Key != ProtocolUtils.FILE) {
                     Directory.CreateDirectory(ProtocolUtils.TMP_DIR + dir + "\\" + prop.Key);
-                    CreateClipboardContent((JObject) contentJson[prop.Key], prop.Key);                    
+                    CreateClipboardContent((JObject)contentJson[prop.Key], dir + "\\" + prop.Key);                    
                 }
             }
         }
@@ -285,6 +305,7 @@ namespace PDSProject
             {//custom exception would be better than this
                 throw new Exception("Request not present in the dictionary");
             }
+            server.Send(new byte[16], ((RequestState)param).client.GetSocket());
         }
 
 
@@ -339,12 +360,13 @@ namespace PDSProject
             while (true)
             {
                 //qui leggi le richieste e distribuisci ad un thread la richiesta
-                byte[] data = new byte[1024];                
+                byte[] data = new byte[64*1024];                
                 int bytesReadNum = server.Receive(data, client.GetSocket());
                 if (bytesReadNum > 0)
                 {
                     byte[] actualData = new byte[bytesReadNum];
                     System.Buffer.BlockCopy(data, 0, actualData, 0, bytesReadNum);
+                    data = null;
                     byte[] byteToken = new byte[ProtocolUtils.TOKEN_DIM];
                     System.Buffer.BlockCopy(actualData, 0, byteToken, 0, ProtocolUtils.TOKEN_DIM);
                     byte[] requestData = new byte[bytesReadNum - ProtocolUtils.TOKEN_DIM];
