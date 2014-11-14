@@ -8,8 +8,5 @@ namespace PDSProject
 {
     class Configuration
     {
-        public int DataPort { get; set; }
-        public int CmdPort { get; set; }
-        public String Psw { get; set; }
     }
 }
