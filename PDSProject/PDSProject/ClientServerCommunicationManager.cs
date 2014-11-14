@@ -8,8 +8,9 @@ using System.Threading;
 
 namespace CommunicationLibrary
 {
-    class ClientServerCommunicationManager
+    public class ClientServerCommunicationManager
     {
+
         public Socket CreateSocket(ProtocolType protocolType)
         {
             Socket socket = new Socket(AddressFamily.InterNetworkV6, SocketType.Stream, protocolType);
@@ -23,17 +24,19 @@ namespace CommunicationLibrary
             socket.Send(toSend);
         }
 
-        public void SendFiles(List<string> filepathList, Socket socket)
-        {
-            foreach (string fileName in filepathList)
-            {
-                socket.SendFile(fileName);
-            }
-        }
-
         public int Receive(byte[] bytes, Socket socket)
         {
             return socket.Receive(bytes);
+        }
+
+        public void Shutdown(Socket socket, SocketShutdown shutdownMode)
+        {
+            socket.Shutdown(shutdownMode);
+        }
+
+        public void Close(Socket socket)
+        {
+            socket.Close();
         }
     }
 }

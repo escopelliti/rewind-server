@@ -142,7 +142,6 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="blinkingIcon.ico" />
-    <Content Include="computer.ico" />
   </ItemGroup>
   <ItemGroup>
     <COMReference Include="Bonjour">
