@@ -42,7 +42,8 @@ namespace PDSProject
             clipboardFilesDelegate += new SetFileDropListClipboard(SetClipboardFileDropList);
             clipboardImageDelegate += new SetImageToClipboard(SetClipboardImage);
 
-            Discovery.ServiceRegister sr = new Discovery.ServiceRegister();
+            //leggi le porte dal file o se non esiste apri il pannello e le fai inserire e te le prendi;
+            Discovery.ServiceRegister sr = new Discovery.ServiceRegister(12000, 12001);
             StartBackgroundWorker();
             InitTrayIcon();
             StartTimer();

@@ -44,7 +44,7 @@ namespace Protocol
         {
             public UInt32 dx;
             public UInt32 dy;
-            public UInt32 mouseData;
+            public Int32 mouseData;
             public MouseFlag dwFlags;
             public UInt32 time;
             public IntPtr dwExtraInfo;
