@@ -14,17 +14,18 @@ namespace Clipboard
     {   
         public String[] fileDropListArray {get; set;}
         private int currentFileNum;
-        private int fileOffset;
+        private int offset;
         private ClipboardPOCO clipboardContent;
         private long currentClipboardDimension;
         private List<String> filesToSend;
+        private byte[] imageBytes;
 
         public ClipboardMgr()
         {
             filesToSend = new List<string>();
             currentClipboardDimension = 0;
             currentFileNum = 0;
-            fileOffset = 0;
+            offset = 0;
         }
 
         public void OnGetDimensionRequest(Object sender, Object param)
@@ -32,8 +33,6 @@ namespace Clipboard
             RequestState requestState = (RequestState)param;
             filesToSend.Clear();
             clipboardContent = MainForm.GetClipboardContent();
-            
-
             switch (clipboardContent.contentType)
             {
                 case ClipboardPOCO.FILE_DROP_LIST:
@@ -54,6 +53,10 @@ namespace Clipboard
                 case ClipboardPOCO.TEXT:
                     String clipboardText = (String)clipboardContent.content;
                     currentClipboardDimension = clipboardText.Length;
+                    break;
+                case ClipboardPOCO.IMAGE:
+                    byte[] img = (byte[])clipboardContent.content;
+                    currentClipboardDimension = img.Length;
                     break;
             }
             byte[] byteToSend = BitConverter.GetBytes(currentClipboardDimension);
@@ -86,15 +89,41 @@ namespace Clipboard
                 case ClipboardPOCO.TEXT:
                     byteToSend = TextStandardRequestToSend();
                     break;
+                case ClipboardPOCO.IMAGE:
+                    imageBytes = (byte[])clipboardContent.content;
+                    byteToSend = ImgStandardRequestToSend();
+                    break;
             }
             ServerDispatcher.server.Send(byteToSend, requestState.client.GetSocket());
             ResetClassValue();
         }
 
+        public void OnImageToTransfer(Object sender, Object ea)
+        {
+            RequestEventArgs rea = (RequestEventArgs)ea;
+            RequestState rs = (RequestState)rea.requestState;
+            short chunkLength = 1024;                                               
+            if (offset < imageBytes.Length)
+            {
+                byte[] chunk = new byte[chunkLength];
+                System.Buffer.BlockCopy(imageBytes, offset, chunk, 0, chunkLength);
+                offset += chunkLength;
+                ServerDispatcher.server.Send(chunk, rs.client.GetSocket());
+                return;
+            }
+            int lastBytes = (imageBytes.Length - (offset - chunkLength)); 
+            if (lastBytes > 0)
+            {
+                byte[] chunk = new byte[lastBytes];
+                System.Buffer.BlockCopy(imageBytes, (offset - chunkLength), chunk, 0, lastBytes);
+                ServerDispatcher.server.Send(chunk, rs.client.GetSocket());
+            }
+        }
+
         private void ResetClassValue()
         {
             currentFileNum = 0;
-            fileOffset= 0;
+            offset= 0;
             currentClipboardDimension= 0;
         }
 
@@ -135,36 +164,43 @@ namespace Clipboard
             long dim = 0;
             if (File.Exists(file))
                 {
-                    byte[] bytesFile = new byte[1024];
-                    //using (var stream = new FileStream(file, FileMode.Open))
+                    byte[] bytesFile = new byte[1024];                    
                     using (var input = File.OpenRead(file))
                     {
                         int bytesReadNum;
                         dim = bytesFile.Length;
-                        if ((fileSize - fileOffset) < bytesFile.Length)
+                        if ((fileSize - offset) < bytesFile.Length)
                         {
-                            dim = (fileSize - fileOffset);
+                            dim = (fileSize - offset);
                         }
-                        input.Position = fileOffset;
-                        //bytesReadNum = stream.Read(bytesFile, fileOffset,(int) dim);
+                        input.Position = offset;                        
                         bytesReadNum = input.Read(bytesFile, 0, (int)dim);
                         if (bytesReadNum > 0)
                         {
                             byte[] bytesFileToSend = new byte[bytesReadNum];
                             System.Buffer.BlockCopy(bytesFile, 0, bytesFileToSend, 0, bytesReadNum);
                             ServerDispatcher.server.Send(bytesFileToSend, rs.client.GetSocket());
-                            fileOffset += bytesReadNum;
+                            offset += bytesReadNum;
                             
-                            if (fileOffset >= new FileInfo(file).Length)
+                            if (offset >= new FileInfo(file).Length)
                             {
                                 currentFileNum++;
-                                fileOffset = 0;
+                                offset = 0;
                             }                                                        
                         }
                         input.Close();
                     }
                 
             }
+        }
+
+        private byte[] ImgStandardRequestToSend()
+        {
+            StandardRequest sr = new StandardRequest();
+            sr.type = ProtocolUtils.SET_CLIPBOARD_TEXT;
+            sr.content = imageBytes.Length.ToString();
+            String toSend = JSON.JSONFactory.CreateJSONStandardRequest(sr);
+            return Encoding.Unicode.GetBytes(toSend);
         }
 
         private byte[] TextStandardRequestToSend()

@@ -12,6 +12,7 @@ using CommunicationLibrary;
 using Newtonsoft.Json;
 using System.Threading;
 using Clipboard;
+using System.IO;
 
 namespace PDSProject
 {
@@ -163,6 +164,17 @@ namespace PDSProject
                 clipboardPOCO.content = System.Windows.Clipboard.GetText();
                 clipboardPOCO.contentType = ClipboardPOCO.TEXT;
                 return clipboardPOCO;
+            }
+            if (System.Windows.Clipboard.ContainsImage())
+            {
+                System.Drawing.Image img = System.Windows.Forms.Clipboard.GetImage();
+                byte[] imageBytes;
+                using (var ms = new MemoryStream())
+                {
+                    img.Save(ms, System.Drawing.Imaging.ImageFormat.Jpeg);
+                    imageBytes = ms.ToArray();
+                    clipboardPOCO.content = imageBytes;
+                }
             }
             return null;
         }

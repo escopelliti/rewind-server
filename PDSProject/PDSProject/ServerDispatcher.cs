@@ -56,6 +56,9 @@ namespace PDSProject
         public delegate void FileToTransferEventHandler(Object sender, Object param);
         public event FileToTransferEventHandler fileTotransferHandler;
 
+        public delegate void ImgToTransferEventHandler(Object sender, Object param);
+        public event ImgToTransferEventHandler imgTotransferHandler;
+
         public delegate void SetActiveServerEventHandler(Object sender, Object param);
         public event SetActiveServerEventHandler setActiveServerHandler;
 
@@ -99,6 +102,9 @@ namespace PDSProject
             fileTotransferHandler += clipboardMgr.OnFileToTransferEvent;
             dispatch[ProtocolUtils.GET_CLIPBOARD_FILES] = new Action<Object>(obj => OnFileToTransfer(new RequestEventArgs((RequestState) obj)));
 
+            imgTotransferHandler += clipboardMgr.OnImageToTransfer;
+            dispatch[ProtocolUtils.GET_CLIPBOARD_IMG] = new Action<Object>(obj => OnImgToTransfer(new RequestEventArgs((RequestState)obj)));
+
             setActiveServerHandler += mainForm.OnSetServerFocus;
             dispatch[ProtocolUtils.SET_RESET_FOCUS] = new Action<Object>(obj => OnSetServerFocus(new RequestEventArgs((RequestState)obj)));
         }
@@ -110,6 +116,15 @@ namespace PDSProject
             {
                 handler(this, ea);
                 server.Send(new byte[16], ea.requestState.client.GetSocket());
+            }
+        }
+
+        private void OnImgToTransfer(RequestEventArgs ea)
+        {
+            ImgToTransferEventHandler handler = this.imgTotransferHandler;
+            if (handler != null)
+            {
+                handler(this, ea);
             }
         }
 
@@ -335,6 +350,7 @@ namespace PDSProject
                 System.Buffer.BlockCopy(data, 0, actualData, 0, bytesReadNum);
                 string json = Encoding.Unicode.GetString(actualData);
                 Console.WriteLine(json);
+                Console.WriteLine();
                 INPUT input = JsonConvert.DeserializeObject<INPUT>(json);
                 if (input.type == 0) { 
                     float screenW = System.Windows.Forms.Screen.PrimaryScreen.Bounds.Width;

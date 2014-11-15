@@ -27,6 +27,7 @@ namespace Protocol
         public const string GET_CLIPBOARD_DIMENSION = "GET_CLIPBOARD_DIMENSION";
         public const string GET_CLIPBOARD_CONTENT = "GET_CLIPBOARD_CONTENT";
         public const string GET_CLIPBOARD_FILES = "GET_CLIPBOARD_FILES";
+        public const string GET_CLIPBOARD_IMG = "GET_CLIPBOARD_IMG";
         public const string SET_RESET_FOCUS = "SET_RESET_FOCUS";
         public const string FOCUS_ON = "FOCUS_ON";
         public const string FOCUS_OFF = "FOCUS_OFF";
@@ -55,6 +56,7 @@ namespace Protocol
             protocolDictionary[GET_CLIPBOARD_DIMENSION] = GET_CLIPBOARD_DIMENSION;
             protocolDictionary[GET_CLIPBOARD_CONTENT] = GET_CLIPBOARD_CONTENT;
             protocolDictionary[GET_CLIPBOARD_FILES] = GET_CLIPBOARD_FILES;
+            protocolDictionary[GET_CLIPBOARD_IMG] = GET_CLIPBOARD_IMG;
             protocolDictionary[SET_RESET_FOCUS] = SET_RESET_FOCUS;
             protocolDictionary[FOCUS_ON] = FOCUS_ON;
             protocolDictionary[FOCUS_OFF] = FOCUS_OFF;
