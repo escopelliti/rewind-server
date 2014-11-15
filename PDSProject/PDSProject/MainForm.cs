@@ -158,6 +158,12 @@ namespace PDSProject
                 clipboardPOCO.contentType = ClipboardPOCO.FILE_DROP_LIST;
                 return clipboardPOCO;
             }
+            if (System.Windows.Clipboard.ContainsText())
+            {
+                clipboardPOCO.content = System.Windows.Clipboard.GetText();
+                clipboardPOCO.contentType = ClipboardPOCO.TEXT;
+                return clipboardPOCO;
+            }
             return null;
         }
 

@@ -28,10 +28,8 @@ namespace Clipboard
         }
 
         public void OnGetDimensionRequest(Object sender, Object param)
-        {
-            //RequestEventArgs rea = (RequestEventArgs)param;
+        {            
             RequestState requestState = (RequestState)param;
-            //RequestState requestState = (RequestState)rea.requestState;
             filesToSend.Clear();
             clipboardContent = MainForm.GetClipboardContent();
             
@@ -53,10 +51,14 @@ namespace Clipboard
                         }
                     }
                     break;
+                case ClipboardPOCO.TEXT:
+                    String clipboardText = (String)clipboardContent.content;
+                    currentClipboardDimension = clipboardText.Length;
+                    break;
             }
             byte[] byteToSend = BitConverter.GetBytes(currentClipboardDimension);
+            currentClipboardDimension = 0;
             ServerDispatcher.server.Send(byteToSend, requestState.client.GetSocket());
-
         }
 
         private long GetDirectorySize(string p)
@@ -70,22 +72,23 @@ namespace Clipboard
             }
             return b;
         }
-
+        
         public void OnGetContentRequest(Object sender, Object param)
         {            
             RequestState requestState = (RequestState)param;
-           
+            byte[] byteToSend = null;
             switch (clipboardContent.contentType)
             {
                 case ClipboardPOCO.FILE_DROP_LIST:
-                    byte[] byteToSend = FileDropListToByteToSend();
-                    ServerDispatcher.server.Send(byteToSend, requestState.client.GetSocket());
-                    ResetClassValue();
-                    SetFilesToSendFromDropList();
-                    //ServerDispatcher.server.Receive(new byte[16], requestState.client.GetSocket());
-                    //OnFileToTransferEvent(this, new RequestEventArgs(requestState));                    
+                    byteToSend = FileDropListToByteToSend();                    
+                    SetFilesToSendFromDropList();                                        
+                    break;
+                case ClipboardPOCO.TEXT:
+                    byteToSend = TextStandardRequestToSend();
                     break;
             }
+            ServerDispatcher.server.Send(byteToSend, requestState.client.GetSocket());
+            ResetClassValue();
         }
 
         private void ResetClassValue()
@@ -162,6 +165,16 @@ namespace Clipboard
                     }
                 
             }
+        }
+
+        private byte[] TextStandardRequestToSend()
+        {
+            String text = (String)clipboardContent.content;
+            StandardRequest sr = new StandardRequest();
+            sr.type = ProtocolUtils.SET_CLIPBOARD_TEXT;
+            sr.content = text;
+            String toSend = JSON.JSONFactory.CreateJSONStandardRequest(sr);
+            return Encoding.Unicode.GetBytes(toSend);
         }
        
         private byte[] FileDropListToByteToSend()

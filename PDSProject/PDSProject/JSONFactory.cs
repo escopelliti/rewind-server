@@ -14,6 +14,11 @@ namespace JSON
     {
         public static string currentDir = ".\\";
 
+        public static String CreateJSONStandardRequest(StandardRequest sr)
+        {
+            return JsonConvert.SerializeObject(sr);
+        }
+
         public static string CreateFileTransferJSONRequest(String type, string[] array)
         {
             JObject request = new JObject();

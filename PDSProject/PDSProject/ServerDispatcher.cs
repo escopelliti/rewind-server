@@ -90,11 +90,9 @@ namespace PDSProject
             clipboardImageHandler += ReceiveDataForClipboard;
             dispatch[ProtocolUtils.TRANSFER_IMAGE] = new Action<Object>(obj => clipboardImageHandler(this, obj));
 
-            //
             getClipboardDimensionHandler += clipboardMgr.OnGetDimensionRequest;
             dispatch[ProtocolUtils.GET_CLIPBOARD_DIMENSION] = new Action<Object>(obj => OnGetClipboardDimension(new RequestEventArgs((RequestState) obj)));
 
-            //
             getClipboardContentHandler += clipboardMgr.OnGetContentRequest;
             dispatch[ProtocolUtils.GET_CLIPBOARD_CONTENT] = new Action<Object>(obj => OnGetClipboardContent(new RequestEventArgs((RequestState) obj)));
 
@@ -296,8 +294,7 @@ namespace PDSProject
 
 
         private void NewClipboardDataToPaste(Object source, Object param)
-        {
-            //XDocument xRequest = ((Request)param).xRequest;
+        {            
             JObject stdRequest = ((RequestState)param).stdRequest;
             MainForm.mainForm.Invoke(MainForm.clipboardTextDelegate, stdRequest[ProtocolUtils.CONTENT].ToString());
             RequestState value = new RequestState();
