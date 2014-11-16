@@ -163,6 +163,7 @@ namespace PDSProject
         private static void SendAckToClient(Object source, Object param)
         {
             RequestState requestState = (RequestState)param;
+            DeleteFileDirContent(ProtocolUtils.TMP_DIR);
             server.Send(Encoding.Unicode.GetBytes(requestState.token), requestState.client.GetSocket());
         }
 
@@ -170,13 +171,13 @@ namespace PDSProject
         {
             RequestState requestState = (RequestState)param;
             string filename = ProtocolUtils.protocolDictionary[requestState.type];
-            using (var stream = new FileStream(filename, FileMode.Append))
+            using (var stream = new FileStream(ProtocolUtils.TMP_DIR + filename, FileMode.Append))
             {
                 stream.Write(requestState.data, 0, requestState.data.Length);
                 stream.Close();
                 server.Send(Convert.FromBase64String(requestState.token), requestState.client.GetSocket());
             }
-            if (new FileInfo(filename).Length >= Convert.ToInt64(requestState.stdRequest[ProtocolUtils.CONTENT].ToString())) 
+            if (new FileInfo(ProtocolUtils.TMP_DIR + filename).Length >= Convert.ToInt64(requestState.stdRequest[ProtocolUtils.CONTENT].ToString())) 
             {
                 
                 RequestState value = new RequestState();
@@ -188,7 +189,7 @@ namespace PDSProject
                 //TODO : AVOID CONDITIONAL TEST
                 if (requestState.type == ProtocolUtils.TRANSFER_IMAGE)
                 {
-                    CreateImageForClipboard(filename);
+                    CreateImageForClipboard(ProtocolUtils.TMP_DIR + filename);
                 }
             }            
         }
@@ -196,9 +197,12 @@ namespace PDSProject
         private static void CreateImageForClipboard(string filename)
         {
             Image image = null;
-            using (var ms = new MemoryStream(File.ReadAllBytes(filename)))
+            byte[] bytes = File.ReadAllBytes(filename);
+            using (var ms = new MemoryStream(bytes))
             {
                 image = Image.FromStream(ms);
+                ms.Position = 0;
+                ms.Close();
             }
             File.Delete(filename);
             MainForm.mainForm.Invoke(MainForm.clipboardImageDelegate, image);  

@@ -14,7 +14,8 @@ namespace Clipboard
     {   
         public String[] fileDropListArray {get; set;}
         private int currentFileNum;
-        private int offset;
+        private long offset;
+        private uint offset1;
         private ClipboardPOCO clipboardContent;
         private long currentClipboardDimension;
         private List<String> filesToSend;
@@ -26,6 +27,7 @@ namespace Clipboard
             currentClipboardDimension = 0;
             currentFileNum = 0;
             offset = 0;
+            offset1 = 0;
         }
 
         public void OnGetDimensionRequest(Object sender, Object param)
@@ -102,20 +104,26 @@ namespace Clipboard
         {
             RequestEventArgs rea = (RequestEventArgs)ea;
             RequestState rs = (RequestState)rea.requestState;
-            short chunkLength = 1024;                                               
-            if (offset < imageBytes.Length)
+            ushort chunkLength = 1024;                                               
+            if (offset1 < imageBytes.Length)
             {
-                byte[] chunk = new byte[chunkLength];
-                System.Buffer.BlockCopy(imageBytes, offset, chunk, 0, chunkLength);
-                offset += chunkLength;
+                int dim = 1024;
+                if ((imageBytes.Length - offset1) < dim)
+                {
+                    dim = (imageBytes.Length - (int)offset1);
+                }
+                byte[] chunk = new byte[dim];
+                System.Buffer.BlockCopy(imageBytes,(int) offset1, chunk, 0, dim);
+                offset1 += chunkLength;
                 ServerDispatcher.server.Send(chunk, rs.client.GetSocket());
                 return;
             }
-            int lastBytes = (imageBytes.Length - (offset - chunkLength)); 
+            offset1-= chunkLength;
+            int lastBytes = (imageBytes.Length - (int) offset1); 
             if (lastBytes > 0)
             {
                 byte[] chunk = new byte[lastBytes];
-                System.Buffer.BlockCopy(imageBytes, (offset - chunkLength), chunk, 0, lastBytes);
+                System.Buffer.BlockCopy(imageBytes, (int) offset1, chunk, 0, lastBytes);
                 ServerDispatcher.server.Send(chunk, rs.client.GetSocket());
             }
         }
@@ -124,6 +132,7 @@ namespace Clipboard
         {
             currentFileNum = 0;
             offset= 0;
+            offset1 = 0;
             currentClipboardDimension= 0;
         }
 
@@ -197,7 +206,7 @@ namespace Clipboard
         private byte[] ImgStandardRequestToSend()
         {
             StandardRequest sr = new StandardRequest();
-            sr.type = ProtocolUtils.SET_CLIPBOARD_TEXT;
+            sr.type = ProtocolUtils.SET_CLIPBOARD_IMAGE;
             sr.content = imageBytes.Length.ToString();
             String toSend = JSON.JSONFactory.CreateJSONStandardRequest(sr);
             return Encoding.Unicode.GetBytes(toSend);

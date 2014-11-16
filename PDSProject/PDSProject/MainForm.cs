@@ -175,6 +175,8 @@ namespace PDSProject
                     imageBytes = ms.ToArray();
                     clipboardPOCO.content = imageBytes;
                 }
+                clipboardPOCO.contentType = ClipboardPOCO.IMAGE;
+                return clipboardPOCO;
             }
             return null;
         }
