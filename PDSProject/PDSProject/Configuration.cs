@@ -9,7 +9,7 @@ namespace Configuration
     public class Configuration
     {
 
-        public String Psw { get; set; }
+        public byte[] Psw { get; set; }
         public String DataPort { get; set; }
         public String CmdPort { get; set; }
     }

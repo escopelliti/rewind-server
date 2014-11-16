@@ -35,6 +35,9 @@ namespace Protocol
         public const string TMP_IMAGE_FILE = ".\\tmp.jpg";
         public const string TMP_DIR = ".\\tmp\\";
 
+        public const ushort DEFAULT_DATA_PORT = 12001;
+        public const ushort DEFAULT_CMD_PORT = 12000;
+
         public const ushort TOKEN_DIM = 16;
 
         public const long CLIBPOARD_DIM_THRESHOLD = 1024 * 1024;

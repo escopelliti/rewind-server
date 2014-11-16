@@ -13,6 +13,7 @@ using Newtonsoft.Json;
 using System.Threading;
 using Clipboard;
 using System.IO;
+using System.Security.Cryptography;
 
 namespace PDSProject
 {
@@ -20,9 +21,8 @@ namespace PDSProject
     {
         private NotifyIcon mainNotifyIcon;
         private NotifyIcon feedbackNotifyIcon;
-        private FormWindowState lastWindowState; 
-        private static System.Windows.Forms.Timer timer;
-        private bool exit = false;
+        
+        private static System.Windows.Forms.Timer timer;        
         private System.Windows.Forms.ContextMenu contextMenu1;
         private System.Windows.Forms.MenuItem menuItem1;
         public delegate void SetTextToClipboard(string stringData);
@@ -35,6 +35,10 @@ namespace PDSProject
         private ushort[] portRange;
         private BackgroundWorker bw;
         private EventHandler eventHandler;
+        private Configuration.ConfigurationMgr confMgr;
+        private static Configuration.Configuration conf;
+        private Discovery.ServiceRegister sr;
+        private ConnectionHandler connHandler;
         
         public MainForm()
         {
@@ -42,13 +46,46 @@ namespace PDSProject
             clipboardTextDelegate += new SetTextToClipboard(SetClipboardText);
             clipboardFilesDelegate += new SetFileDropListClipboard(SetClipboardFileDropList);
             clipboardImageDelegate += new SetImageToClipboard(SetClipboardImage);
-
+            this.MouseHover += OnMouseHover;
+            this.FormClosing += MainForm_WindowClosing;
             //leggi le porte dal file o se non esiste apri il pannello e le fai inserire e te le prendi;
-            Discovery.ServiceRegister sr = new Discovery.ServiceRegister(12000, 12001);
+            connHandler = new ConnectionHandler(this);
+            confMgr = new Configuration.ConfigurationMgr();
+            conf = null;
             StartBackgroundWorker();
             InitTrayIcon();
             StartTimer();
-            //LEGGI DAL FILE DI CONFIGURAZIONE SE ESISTE ALTRIMENTI CREALO DI DEFAULT
+            if (confMgr.ExistConf())
+            {
+                conf = confMgr.ReadConf();
+                Window_StateChanged(new EventArgs());                                                
+                sr = new Discovery.ServiceRegister(Convert.ToUInt16(conf.DataPort), Convert.ToUInt16(conf.CmdPort));
+                sr.RegisterServices();
+                StartListening();
+            }
+            else
+            {
+                this.WindowState = FormWindowState.Normal;
+            }            
+        }
+
+        private void StartListening()
+        {
+            connHandler.CmdPort = Convert.ToUInt16(conf.CmdPort);
+            connHandler.DataPort = Convert.ToUInt16(conf.DataPort);
+            try
+            {
+                connHandler.Listen();
+            }
+            catch (Exception ex)
+            {
+                Application.Exit();
+            }
+        }
+
+        private void StopListening()
+        {
+            connHandler.StopListening();    
         }
 
         private void StartBackgroundWorker()
@@ -96,25 +133,16 @@ namespace PDSProject
                 mainNotifyIcon.Visible = true;
             }
             else if (this.WindowState == FormWindowState.Normal)
-            {
+            {                
                 mainNotifyIcon.Visible = false;
                 this.ShowInTaskbar = true;
             }
-        }
-
-        protected override void OnClientSizeChanged(EventArgs e)
-        {
-            if (this.WindowState != lastWindowState)
-            {
-                lastWindowState = this.WindowState;
-                Window_StateChanged(e);
-            }
-            base.OnClientSizeChanged(e);
-        }        
+        }       
 
         private void MyNotifyIcon_MouseDoubleClick(object sender, System.Windows.Forms.MouseEventArgs e)
-        {
+        {            
             this.WindowState = FormWindowState.Normal;
+            Window_StateChanged(new EventArgs());
         }
      
         public void OnSetServerFocus(Object obj, Object param)
@@ -190,7 +218,7 @@ namespace PDSProject
 
         private void CreateComboboxRange(Object sender, DoWorkEventArgs e)
         {            
-            ushort startingPort = 1024;
+            ushort startingPort = 10000;
             portRange = new ushort[(UInt16.MaxValue - startingPort) + 1];
             int counter = 0;
             while (startingPort < UInt16.MaxValue)
@@ -206,19 +234,16 @@ namespace PDSProject
         public static void Main()
         {            
             mainForm = new MainForm();
-            ConnectionHandler handler = new ConnectionHandler(mainForm);
-            handler.Listen();
-            Application.Run(mainForm);
+            Application.Run(mainForm);            
         }
 
-
-        private void MainForm_MouseHover(object sender, System.EventArgs e)
+        public void OnMouseHover(object sender, System.EventArgs e)
         {
             if (bw.IsBusy != true && this.comboBox1.Items.Count == 0)
             {
                 bw.RunWorkerAsync();
             }
-            this.MouseHover -= MainForm_MouseHover;
+            this.MouseHover -= OnMouseHover;
         }
 
         private void SetClipboardText(string contentToPaste)
@@ -238,18 +263,36 @@ namespace PDSProject
 
         private void button2_Click(object sender, EventArgs e)
         {
-            this.Close();
+            this.WindowState = FormWindowState.Minimized;
+            Window_StateChanged(e);
         }
 
         private void button1_Click(object sender, EventArgs e)
         {
             string psw = this.textBox1.Text;
-            string dataPort = (string) this.comboBox1.SelectedItem;
-            string cmdPort = (string)this.comboBox2.SelectedItem;
+            ushort dataPort = (ushort)this.comboBox1.SelectedItem;
+            ushort cmdPort = (ushort) this.comboBox2.SelectedItem;
             if (psw != null && psw != String.Empty && psw != "")
             {
                 if (dataPort != cmdPort) {
-                    //scrivi nel file di configurazione il digest calcolato in base alla psw e le porte
+                    byte[] bytes = Encoding.UTF8.GetBytes(psw);
+                    SHA256Managed hashstring = new SHA256Managed();
+                    byte[] hash = hashstring.ComputeHash(bytes);                    
+                    confMgr.WriteConf(dataPort, cmdPort, hash);
+                    if (sr != null)
+                    {
+                        MessageBox.Show("Le modifiche saranno disponibili al riavvio dell'applicazione", "Informazione", MessageBoxButtons.OK, MessageBoxIcon.Information);                       
+                    }
+                    else
+                    {
+                        conf = confMgr.ReadConf();
+                        sr = new Discovery.ServiceRegister(Convert.ToUInt16(dataPort), Convert.ToUInt16(cmdPort));
+                        sr.RegisterServices();
+                        StartListening();
+                    }
+                    
+                    this.WindowState = FormWindowState.Minimized;
+                    Window_StateChanged(e);
                 } else {
                     MessageBox.Show("Le porte non possono avere lo stesso valore");
                 }                 
@@ -263,17 +306,14 @@ namespace PDSProject
 
         private void menuItem1_Click(object Sender, EventArgs e)
         {
-            exit = true;
             this.Close();
         }
 
         private void MainForm_WindowClosing(object sender, System.ComponentModel.CancelEventArgs e)
-        {
-            if (!exit)
-            {
-                this.WindowState = FormWindowState.Minimized;
-                e.Cancel = true;
-            }
+        {            
+            //this.WindowState = FormWindowState.Minimized;
+            //e.Cancel = true;
+            
         }
     }
 }

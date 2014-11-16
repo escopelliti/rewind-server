@@ -88,6 +88,7 @@
     <Compile Include="ClipboardMgr.cs" />
     <Compile Include="ClipboardPOCO.cs" />
     <Compile Include="Configuration.cs" />
+    <Compile Include="ConfigurationMgr.cs" />
     <Compile Include="ConnectionHandler.cs" />
     <Compile Include="Input.cs" />
     <Compile Include="JSONFactory.cs" />

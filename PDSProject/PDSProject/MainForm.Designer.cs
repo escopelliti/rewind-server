@@ -126,10 +126,8 @@
             this.MinimizeBox = false;
             this.Name = "MainForm";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
-            this.Text = "Configurazione";
-            this.FormClosing += MainForm_WindowClosing;
-            this.MouseHover += MainForm_MouseHover;
-            
+            this.Text = "Cambia la configurazione";
+            this.WindowState = System.Windows.Forms.FormWindowState.Minimized;
             this.ResumeLayout(false);
             this.PerformLayout();
 

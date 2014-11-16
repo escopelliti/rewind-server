@@ -7,7 +7,7 @@ using System.Net.Sockets;
 
 namespace PDSProject
 {
-    class Channel
+    public class Channel
     {
 
         private Socket dataSocket;

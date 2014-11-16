@@ -15,7 +15,7 @@ namespace CommunicationLibrary
         public Socket Listen(string host, int port, Socket socket)
         {
             IPHostEntry ipHostInfo = Dns.GetHostEntry(host);
-            IPAddress ipAddress = ipHostInfo.AddressList[0];
+            IPAddress ipAddress = FindIPv4Addr(ipHostInfo);  
             IPEndPoint localEP = new IPEndPoint(ipAddress, port);
             try
             {
@@ -28,6 +28,18 @@ namespace CommunicationLibrary
                 Console.WriteLine(e.ToString());
                 return null;
             }
+        }
+
+        private IPAddress FindIPv4Addr(IPHostEntry ipHostInfo)
+        {
+            foreach (IPAddress addr in ipHostInfo.AddressList)
+            {
+                if (addr.AddressFamily == AddressFamily.InterNetwork)
+                {
+                    return addr;
+                }
+            }
+            return null;
         }
 
         public Socket Accept(Socket serverSocket)
