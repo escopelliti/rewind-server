@@ -60,7 +60,8 @@ namespace PDSProject
                 connHandler = new ConnectionHandler(this, conf);
                 Window_StateChanged(new EventArgs());                                                
                 sr = new Discovery.ServiceRegister(Convert.ToUInt16(conf.DataPort), Convert.ToUInt16(conf.CmdPort));
-                sr.RegisterServices();
+                sr.RegisterCmdService();
+                sr.RegisterDataService();
                 StartListening();
             }
             else
@@ -295,8 +296,10 @@ namespace PDSProject
                         conf = confMgr.ReadConf();
                         connHandler = new ConnectionHandler(this, conf);
                         sr = new Discovery.ServiceRegister(Convert.ToUInt16(dataPort), Convert.ToUInt16(cmdPort));
-                        sr.RegisterServices();
-                        StartListening();
+                        ThreadPool.QueueUserWorkItem(new WaitCallback(StartCmdService));
+                        ThreadPool.QueueUserWorkItem(new WaitCallback(StartDataService));                                                
+                        Thread Listener = new Thread(new ThreadStart(StartListening));
+                        Listener.Start();
                     }
                     
                     this.WindowState = FormWindowState.Minimized;
@@ -310,6 +313,16 @@ namespace PDSProject
                 MessageBox.Show("Inserisci una password per continuare!");
             } 
             
+        }
+
+        private void StartCmdService(object state)
+        {
+            this.sr.RegisterCmdService();
+        }
+
+        private void StartDataService(object state)
+        {
+            this.sr.RegisterDataService();
         }
 
         private void menuItem1_Click(object Sender, EventArgs e)

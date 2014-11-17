@@ -32,10 +32,14 @@ namespace Discovery
             this.CurrentCmdPort = cmdPort;
         }
 
-        public void RegisterServices()
+        public void RegisterCmdService()
+        {            
+            m_registrar = m_service.Register(0, 0, System.Net.Dns.GetHostName() + "CmdInstance", "_cmdListening._tcp", null, null, CurrentCmdPort, null, m_eventManager);            
+        }
+
+        public void RegisterDataService()
         {
             m_registrar = m_service.Register(0, 0, System.Net.Dns.GetHostName() + "DataInstance", "_dataListening._tcp", null, null, CurrentDataPort, null, m_eventManager);
-            m_registrar = m_service.Register(0, 0, System.Net.Dns.GetHostName() + "CmdInstance", "_cmdListening._tcp", null, null, CurrentCmdPort, null, m_eventManager);            
         }
 
         public void Stop()
