@@ -388,8 +388,6 @@ namespace PDSProject
                 byte[] actualData = new byte[bytesReadNum];
                 System.Buffer.BlockCopy(data, 0, actualData, 0, bytesReadNum);
                 string json = Encoding.Unicode.GetString(actualData);
-                Console.WriteLine(json);
-                Console.WriteLine();
                 INPUT input = JsonConvert.DeserializeObject<INPUT>(json);
                 if (input.type == 0) { 
                     float screenW = System.Windows.Forms.Screen.PrimaryScreen.Bounds.Width;
@@ -443,8 +441,7 @@ namespace PDSProject
 
         private static void DispatchRequest(object request)
         {
-            RequestState newRequest = (RequestState)request;
-            Console.WriteLine(newRequest.data.Length);          
+            RequestState newRequest = (RequestState)request;            
             if (requestDictionary.ContainsKey(newRequest.token))
             {
                 RequestState oldRequest = requestDictionary[newRequest.token];

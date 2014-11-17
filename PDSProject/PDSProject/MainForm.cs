@@ -46,7 +46,8 @@ namespace PDSProject
             clipboardTextDelegate += new SetTextToClipboard(SetClipboardText);
             clipboardFilesDelegate += new SetFileDropListClipboard(SetClipboardFileDropList);
             clipboardImageDelegate += new SetImageToClipboard(SetClipboardImage);
-            this.MouseHover += OnMouseHover;            
+            this.MouseHover += OnMouseHover;
+            this.FormClosing += MainForm_FormClosing;
             //leggi le porte dal file o se non esiste apri il pannello e le fai inserire e te le prendi;            
             confMgr = new Configuration.ConfigurationMgr();
             conf = null;
@@ -60,13 +61,19 @@ namespace PDSProject
                 Window_StateChanged(new EventArgs());                                                
                 sr = new Discovery.ServiceRegister(Convert.ToUInt16(conf.DataPort), Convert.ToUInt16(conf.CmdPort));
                 sr.RegisterCmdService();
-                sr.RegisterDataService();
+                sr.RegisterDataService();                
                 StartListening();
             }
             else
             {
                 this.WindowState = FormWindowState.Normal;
             }            
+        }
+
+        private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            this.sr.Stop();
+            Application.Exit();
         }
 
         private void StartListening()
@@ -296,7 +303,7 @@ namespace PDSProject
                         connHandler = new ConnectionHandler(this, conf);
                         sr = new Discovery.ServiceRegister(Convert.ToUInt16(dataPort), Convert.ToUInt16(cmdPort));
                         ThreadPool.QueueUserWorkItem(new WaitCallback(StartCmdService));
-                        ThreadPool.QueueUserWorkItem(new WaitCallback(StartDataService));                                                
+                        ThreadPool.QueueUserWorkItem(new WaitCallback(StartDataService));
                         Thread Listener = new Thread(new ThreadStart(StartListening));
                         Listener.Start();
                     }

@@ -45,7 +45,9 @@ namespace Discovery
         public void Stop()
         {
             m_service.Stop();
+            m_service = null;
             m_registrar.Stop();
+            m_registrar = null;
         }
 
         public void ServiceRegistered(Bonjour.DNSSDService srvc, Bonjour.DNSSDFlags flags, string s1, string s2, string s3)
