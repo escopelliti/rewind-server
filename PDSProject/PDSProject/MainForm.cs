@@ -278,8 +278,14 @@ namespace PDSProject
                     byte[] bytes = Encoding.UTF8.GetBytes(psw);
                     SHA256Managed hashstring = new SHA256Managed();
                     byte[] hash = hashstring.ComputeHash(bytes);
-                    string hashPsw = Convert.ToString(hash);
-                    confMgr.WriteConf(dataPort, cmdPort, hashPsw);
+                     
+                    StringBuilder stringBuilder = new StringBuilder();
+                    foreach(byte b in hash)
+                    {
+                        stringBuilder.AppendFormat("{0:X2}", b);
+                    }
+                    string hashString = stringBuilder.ToString();
+                    confMgr.WriteConf(dataPort, cmdPort, hashString);
                     if (sr != null)
                     {
                         MessageBox.Show("Le modifiche saranno disponibili al riavvio dell'applicazione", "Informazione", MessageBoxButtons.OK, MessageBoxIcon.Information);                       
