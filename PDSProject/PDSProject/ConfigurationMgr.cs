@@ -10,7 +10,7 @@ namespace Configuration
     public class ConfigurationMgr
     {
 
-        public void WriteConf(ushort dataPort, ushort cmdPort, byte[] pswDigest)
+        public void WriteConf(ushort dataPort, ushort cmdPort, string pswDigest)
         {
             {
                 Configuration conf = new Configuration();
@@ -25,6 +25,7 @@ namespace Configuration
                 }
             }
         }
+
 
         public bool ExistConf()
         {
@@ -45,11 +46,6 @@ namespace Configuration
             {
                 return null;
             }
-        }
-
-        internal void WriteConf(string dataPort, string cmdPort, byte[] hash)
-        {
-            throw new NotImplementedException();
         }
     }
 }

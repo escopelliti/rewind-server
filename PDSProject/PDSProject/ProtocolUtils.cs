@@ -31,6 +31,7 @@ namespace Protocol
         public const string SET_RESET_FOCUS = "SET_RESET_FOCUS";
         public const string FOCUS_ON = "FOCUS_ON";
         public const string FOCUS_OFF = "FOCUS_OFF";
+        public const string TRY_AUTHENTICATE = "TRY_AUTHENTICATE";
 
         public const string TMP_IMAGE_FILE = ".\\tmp.jpg";
         public const string TMP_DIR = ".\\tmp\\";
@@ -63,6 +64,7 @@ namespace Protocol
             protocolDictionary[SET_RESET_FOCUS] = SET_RESET_FOCUS;
             protocolDictionary[FOCUS_ON] = FOCUS_ON;
             protocolDictionary[FOCUS_OFF] = FOCUS_OFF;
+            protocolDictionary[TRY_AUTHENTICATE] = TRY_AUTHENTICATE;
         }
 
 

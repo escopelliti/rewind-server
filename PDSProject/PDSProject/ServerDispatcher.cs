@@ -24,6 +24,7 @@ namespace PDSProject
         public static ServerCommunicationManager server { get; set; }
         private ClipboardMgr clipboardMgr;
         private MainForm mainForm;
+        private Configuration.Configuration conf;
         public delegate void ChangeClipboardEventHandler(Object sender, Object param);
         public event ChangeClipboardEventHandler clipboardHandler;
         private static Dictionary<string, Delegate> dispatch;
@@ -62,12 +63,17 @@ namespace PDSProject
         public delegate void SetActiveServerEventHandler(Object sender, Object param);
         public event SetActiveServerEventHandler setActiveServerHandler;
 
-        public ServerDispatcher (ServerCommunicationManager runningServer, MainForm mainWindow) {
+        public delegate void AuthenticationEventHandler(Object sender, Object param);
+        public event AuthenticationEventHandler authenticationHandler;
+
+        public ServerDispatcher (ServerCommunicationManager runningServer, MainForm mainWindow, Configuration.Configuration conf) {
+
             server = runningServer;
             this.mainForm = mainWindow;
             filesToReceive = new List<ProtocolUtils.FileStruct>();
             fileDropList = new System.Collections.Specialized.StringCollection();
             currentFileNum = 0;
+            this.conf = conf;
             requestDictionary = new ConcurrentDictionary<string, RequestState>();           
             clipboardMgr = new ClipboardMgr();
             ProtocolUtils.InitProtocolDictionary();
@@ -107,6 +113,26 @@ namespace PDSProject
 
             setActiveServerHandler += mainForm.OnSetServerFocus;
             dispatch[ProtocolUtils.SET_RESET_FOCUS] = new Action<Object>(obj => OnSetServerFocus(new RequestEventArgs((RequestState)obj)));
+
+            authenticationHandler += OnTryAuthentication;
+            dispatch[ProtocolUtils.TRY_AUTHENTICATE] = new Action<Object>(obj => OnTryToAuth(new RequestEventArgs((RequestState)obj)));
+        }
+
+        private void OnTryAuthentication(object sender, object param)
+        {
+            RequestEventArgs rea = (RequestEventArgs)param;
+            RequestState rs = (RequestState)rea.requestState;
+            StandardRequest sr = rs.stdRequest;
+            bool result = false;
+            if (this.conf.Psw.Equals(sr.content.ToString()))
+            {
+                result = true;
+            }
+            StandardRequest stdReq = new StandardRequest();
+            stdReq.type = sr.type;
+            stdReq.content = result;
+            string toSend = JsonConvert.SerializeObject(stdReq);
+            server.Send(Encoding.Unicode.GetBytes(toSend), rs.client.GetSocket());
         }
 
         private void OnSetServerFocus(RequestEventArgs ea)
@@ -116,6 +142,15 @@ namespace PDSProject
             {
                 handler(this, ea);
                 server.Send(new byte[16], ea.requestState.client.GetSocket());
+            }
+        }
+
+        private void OnTryToAuth(RequestEventArgs ea)
+        {
+            AuthenticationEventHandler handler = this.authenticationHandler;
+            if (handler != null)
+            {
+                handler(this, ea);
             }
         }
 
@@ -177,7 +212,7 @@ namespace PDSProject
                 stream.Close();
                 server.Send(Convert.FromBase64String(requestState.token), requestState.client.GetSocket());
             }
-            if (new FileInfo(ProtocolUtils.TMP_DIR + filename).Length >= Convert.ToInt64(requestState.stdRequest[ProtocolUtils.CONTENT].ToString())) 
+            if (new FileInfo(ProtocolUtils.TMP_DIR + filename).Length >= Convert.ToInt64(requestState.stdRequest.content.ToString())) 
             {
                 
                 RequestState value = new RequestState();
@@ -263,7 +298,7 @@ namespace PDSProject
             DeleteFileDirContent(ProtocolUtils.TMP_DIR);
             RequestState requestState = (RequestState) param;
 
-            JObject contentJson = (JObject)requestState.stdRequest[ProtocolUtils.CONTENT];
+            JObject contentJson = (JObject)requestState.stdRequest.content;
 
             List<ProtocolUtils.FileStruct> files = new List<ProtocolUtils.FileStruct>();
 
@@ -314,8 +349,8 @@ namespace PDSProject
 
         private void NewClipboardDataToPaste(Object source, Object param)
         {            
-            JObject stdRequest = ((RequestState)param).stdRequest;
-            MainForm.mainForm.Invoke(MainForm.clipboardTextDelegate, stdRequest[ProtocolUtils.CONTENT].ToString());
+            StandardRequest stdRequest = ((RequestState)param).stdRequest;
+            MainForm.mainForm.Invoke(MainForm.clipboardTextDelegate, stdRequest.content.ToString());
             RequestState value = new RequestState();
             if (!requestDictionary.TryRemove(((RequestState)param).token, out value))
             {//custom exception would be better than this
@@ -419,13 +454,13 @@ namespace PDSProject
                 dispatch[newRequest.type].DynamicInvoke(newRequest);
             }
             else
-            {                
+            {
+                StandardRequest sr = JsonConvert.DeserializeObject<StandardRequest>(Encoding.Unicode.GetString(newRequest.data));
                 JObject receivedJson = JObject.Parse(Encoding.Unicode.GetString(newRequest.data));
-                Console.WriteLine(newRequest.data.Length);
-                string type = receivedJson[ProtocolUtils.TYPE].ToString();
+                string type = sr.type;
                 string requestType = ProtocolUtils.protocolDictionary[type];
                 newRequest.type = requestType;
-                newRequest.stdRequest = receivedJson;
+                newRequest.stdRequest = sr;
                 requestDictionary[newRequest.token] = newRequest;
                 dispatch[type].DynamicInvoke(newRequest);
             }
@@ -436,7 +471,7 @@ namespace PDSProject
     {
         public Client client;
         public byte[] data;
-        public JObject stdRequest;
+        public StandardRequest stdRequest;
         public string type;
         public string token;
     }

@@ -20,11 +20,11 @@ namespace CommunicationLibrary
         public ushort CmdPort { get; set; }
          
         //ci dovra essere una struttura che gestisce tutte le connessioni/socket in entrata
-        public ConnectionHandler(MainForm mainForm)
+        public ConnectionHandler(MainForm mainForm, Configuration.Configuration conf)
         {
             serverChannel = new Channel();
             this.server = new ServerCommunicationManager();
-            dispatcher = new ServerDispatcher(server, mainForm);
+            dispatcher = new ServerDispatcher(server, mainForm, conf);
             serverChannel.SetDataSocket(server.CreateSocket(ProtocolType.Tcp));
             serverChannel.SetCmdSocket(server.CreateSocket(ProtocolType.Tcp));
         }

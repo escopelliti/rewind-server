@@ -6,9 +6,9 @@ using System.Threading.Tasks;
 
 namespace Protocol
 {
-    class StandardRequest
+    public class StandardRequest
     {
         public string type {get; set;}
-        public string content {get; set;}
+        public Object content {get; set;}
     }
 }

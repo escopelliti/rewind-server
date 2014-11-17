@@ -48,8 +48,7 @@ namespace PDSProject
             clipboardImageDelegate += new SetImageToClipboard(SetClipboardImage);
             this.MouseHover += OnMouseHover;
             this.FormClosing += MainForm_WindowClosing;
-            //leggi le porte dal file o se non esiste apri il pannello e le fai inserire e te le prendi;
-            connHandler = new ConnectionHandler(this);
+            //leggi le porte dal file o se non esiste apri il pannello e le fai inserire e te le prendi;            
             confMgr = new Configuration.ConfigurationMgr();
             conf = null;
             StartBackgroundWorker();
@@ -58,6 +57,7 @@ namespace PDSProject
             if (confMgr.ExistConf())
             {
                 conf = confMgr.ReadConf();
+                connHandler = new ConnectionHandler(this, conf);
                 Window_StateChanged(new EventArgs());                                                
                 sr = new Discovery.ServiceRegister(Convert.ToUInt16(conf.DataPort), Convert.ToUInt16(conf.CmdPort));
                 sr.RegisterServices();
@@ -150,7 +150,7 @@ namespace PDSProject
             RequestEventArgs rea = (RequestEventArgs)param;
             RequestState rs = (RequestState)rea.requestState;
 
-            string content = rs.stdRequest[Protocol.ProtocolUtils.CONTENT].ToString();
+            string content = rs.stdRequest.content.ToString();
             if (content == Protocol.ProtocolUtils.FOCUS_ON)
             {
                 timer.Tick += eventHandler;
@@ -277,8 +277,9 @@ namespace PDSProject
                 if (dataPort != cmdPort) {
                     byte[] bytes = Encoding.UTF8.GetBytes(psw);
                     SHA256Managed hashstring = new SHA256Managed();
-                    byte[] hash = hashstring.ComputeHash(bytes);                    
-                    confMgr.WriteConf(dataPort, cmdPort, hash);
+                    byte[] hash = hashstring.ComputeHash(bytes);
+                    string hashPsw = Convert.ToString(hash);
+                    confMgr.WriteConf(dataPort, cmdPort, hashPsw);
                     if (sr != null)
                     {
                         MessageBox.Show("Le modifiche saranno disponibili al riavvio dell'applicazione", "Informazione", MessageBoxButtons.OK, MessageBoxIcon.Information);                       
@@ -286,6 +287,7 @@ namespace PDSProject
                     else
                     {
                         conf = confMgr.ReadConf();
+                        connHandler = new ConnectionHandler(this, conf);
                         sr = new Discovery.ServiceRegister(Convert.ToUInt16(dataPort), Convert.ToUInt16(cmdPort));
                         sr.RegisterServices();
                         StartListening();
@@ -311,9 +313,6 @@ namespace PDSProject
 
         private void MainForm_WindowClosing(object sender, System.ComponentModel.CancelEventArgs e)
         {            
-            //this.WindowState = FormWindowState.Minimized;
-            //e.Cancel = true;
-            
         }
     }
 }
