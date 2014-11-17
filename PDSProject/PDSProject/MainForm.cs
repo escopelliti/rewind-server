@@ -46,8 +46,7 @@ namespace PDSProject
             clipboardTextDelegate += new SetTextToClipboard(SetClipboardText);
             clipboardFilesDelegate += new SetFileDropListClipboard(SetClipboardFileDropList);
             clipboardImageDelegate += new SetImageToClipboard(SetClipboardImage);
-            this.MouseHover += OnMouseHover;
-            this.FormClosing += MainForm_WindowClosing;
+            this.MouseHover += OnMouseHover;            
             //leggi le porte dal file o se non esiste apri il pannello e le fai inserire e te le prendi;            
             confMgr = new Configuration.ConfigurationMgr();
             conf = null;
@@ -328,10 +327,6 @@ namespace PDSProject
         private void menuItem1_Click(object Sender, EventArgs e)
         {
             this.Close();
-        }
-
-        private void MainForm_WindowClosing(object sender, System.ComponentModel.CancelEventArgs e)
-        {            
         }
     }
 }
