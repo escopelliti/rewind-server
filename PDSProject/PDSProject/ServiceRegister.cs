@@ -14,9 +14,11 @@ namespace Discovery
     {
 
         private Bonjour.DNSSDService m_service = null;
+        public short serviceNum { get; set; }
 
         //A Handle for the registered record
         private Bonjour.DNSSDService m_registrar = null;
+        private Bonjour.DNSSDService m_registrar1 = null;
 
         private Bonjour.DNSSDEventManager m_eventManager = null;
 
@@ -31,7 +33,7 @@ namespace Discovery
             this.CurrentDataPort = dataPort;
             this.CurrentCmdPort = cmdPort;
             m_registrar = m_service.Register(0, 0, System.Net.Dns.GetHostName() + "CmdInstance", "_cmdListening._tcp", null, null, CurrentCmdPort, null, m_eventManager);
-            m_registrar = m_service.Register(0, 0, System.Net.Dns.GetHostName() + "DataInstance", "_dataListening._tcp", null, null, CurrentDataPort, null, m_eventManager);
+            m_registrar1 = m_service.Register(0, 0, System.Net.Dns.GetHostName() + "DataInstance", "_dataListening._tcp", null, null, CurrentDataPort, null, m_eventManager);
         }
 
         public void RegisterCmdService()
@@ -54,6 +56,7 @@ namespace Discovery
 
         public void ServiceRegistered(Bonjour.DNSSDService srvc, Bonjour.DNSSDFlags flags, string s1, string s2, string s3)
         {
+            serviceNum++;
             Console.WriteLine("The service {0} of type {1} successfully registered with the mDNS daemon", s1, s2);
         }
     }

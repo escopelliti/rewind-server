@@ -82,6 +82,10 @@ namespace PDSProject
             connHandler.DataPort = Convert.ToUInt16(conf.DataPort);
             try
             {
+                if (sr.serviceNum <= 1)
+                {
+                    Application.Exit();
+                }
                 connHandler.Listen();
             }
             catch (Exception ex)
