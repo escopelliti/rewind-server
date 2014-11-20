@@ -12,30 +12,84 @@ namespace CommunicationLibrary
     {
         public Socket CreateSocket(ProtocolType protocolType)
         {
-            Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, protocolType);
-            socket.SendBufferSize = 64 * 1024;
-            socket.ReceiveBufferSize = 64 * 1024;
+            Socket socket;
+            try
+            {
+                socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, protocolType);
+                socket.SendBufferSize = 64 * 1024;
+                socket.ReceiveBufferSize = 64 * 1024;
+            }
+            catch (SocketException ex)
+            {
+                return null;
+            }
+            catch (Exception ex)
+            {
+                return null;
+            }
             return socket;
         }
 
         public void Send(byte[] toSend, Socket socket)
         {
-            socket.Send(toSend);
+            try
+            {
+                socket.Send(toSend);
+            }
+            catch (SocketException ex)
+            {
+                return;
+            }
+            catch (Exception ex)
+            {
+                return;
+            }
         }
 
         public int Receive(byte[] bytes, Socket socket)
         {
-            return socket.Receive(bytes);
+            int bytesRead = 0;
+            try
+            {
+                bytesRead = socket.Receive(bytes);
+            }
+            catch (SocketException ex)
+            {
+                return 0;
+            }
+            catch (Exception ex)
+            {
+                return 0;
+            }
+            return bytesRead;
         }
 
         public void Shutdown(Socket socket, SocketShutdown shutdownMode)
         {
-            socket.Shutdown(shutdownMode);
+            try
+            {
+                socket.Shutdown(shutdownMode);
+            }
+            catch (SocketException ex)
+            {
+                return;
+            }
+            catch (ObjectDisposedException ex)
+            {
+                return;
+            }
         }
 
         public void Close(Socket socket)
         {
-            socket.Close();
+            try
+            {
+                socket.Close();
+            }
+            catch (Exception ex)
+            {
+                return;
+            }
         }
     }
 }

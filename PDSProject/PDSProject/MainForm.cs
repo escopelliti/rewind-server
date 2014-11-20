@@ -5,7 +5,6 @@ using System.Data;
 using System.Drawing;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Collections.Specialized;
 using CommunicationLibrary;
@@ -59,9 +58,7 @@ namespace PDSProject
                 conf = confMgr.ReadConf();
                 connHandler = new ConnectionHandler(this, conf);
                 Window_StateChanged(new EventArgs());                                                
-                sr = new Discovery.ServiceRegister(Convert.ToUInt16(conf.DataPort), Convert.ToUInt16(conf.CmdPort));
-                //sr.RegisterCmdService();
-                //sr.RegisterDataService();                
+                sr = new Discovery.ServiceRegister(Convert.ToUInt16(conf.DataPort), Convert.ToUInt16(conf.CmdPort));                
                 StartListening();
             }
             else
@@ -166,7 +163,14 @@ namespace PDSProject
             {
                 timer.Tick += eventHandler;
                 feedbackNotifyIcon.Visible = true;
-                this.connHandler.ListenData();
+                try
+                {
+                    this.connHandler.ListenData();
+                }
+                catch (Exception ex)
+                {
+                    Application.Exit();
+                }
                 this.connHandler.closed = false;
                 //ascolto data
             }
@@ -186,7 +190,6 @@ namespace PDSProject
             timer.Interval = 500;
             eventHandler += Each_Tick;
             timer.Start();
-
         }
 
         public void Each_Tick(object o, EventArgs sender)
@@ -290,7 +293,8 @@ namespace PDSProject
             ushort cmdPort = (ushort) this.comboBox2.SelectedItem;
             if (psw != null && psw != String.Empty && psw != "")
             {
-                if (dataPort != cmdPort) {
+                if (dataPort != cmdPort) 
+                {
                     byte[] bytes = Encoding.UTF8.GetBytes(psw);
                     SHA256Managed hashstring = new SHA256Managed();
                     byte[] hash = hashstring.ComputeHash(bytes);
@@ -310,24 +314,23 @@ namespace PDSProject
                     {
                         conf = confMgr.ReadConf();
                         connHandler = new ConnectionHandler(this, conf);
-                        sr = new Discovery.ServiceRegister(Convert.ToUInt16(dataPort), Convert.ToUInt16(cmdPort));
-                        //ThreadPool.QueueUserWorkItem(new WaitCallback(StartCmdService));
-                        //ThreadPool.QueueUserWorkItem(new WaitCallback(StartDataService));
+                        sr = new Discovery.ServiceRegister(Convert.ToUInt16(dataPort), Convert.ToUInt16(cmdPort));                        
                         Thread Listener = new Thread(new ThreadStart(StartListening));
                         Listener.Start();
                     }
                     
                     this.WindowState = FormWindowState.Minimized;
                     Window_StateChanged(e);
-                } else {
+                } 
+                else
+                {
                     MessageBox.Show("Le porte non possono avere lo stesso valore");
                 }                 
             }
             else
             {
                 MessageBox.Show("Inserisci una password per continuare!");
-            } 
-            
+            }             
         }
 
         private void StartCmdService(object state)

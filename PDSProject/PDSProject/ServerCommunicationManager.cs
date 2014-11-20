@@ -13,19 +13,22 @@ namespace CommunicationLibrary
     {
 
         public Socket Listen(string host, int port, Socket socket)
-        {
-            IPHostEntry ipHostInfo = Dns.GetHostEntry(host);
-            IPAddress ipAddress = FindIPv4Addr(ipHostInfo);  
-            IPEndPoint localEP = new IPEndPoint(ipAddress, port);
+        {            
             try
             {
+                IPHostEntry ipHostInfo = Dns.GetHostEntry(host);
+                IPAddress ipAddress = FindIPv4Addr(ipHostInfo);
+                IPEndPoint localEP = new IPEndPoint(ipAddress, port);
                 socket.Bind(localEP);
                 socket.Listen(100);
                 return socket;
             }
-            catch (Exception e)
+            catch (SocketException ex)
             {
-                Console.WriteLine(e.ToString());
+                return null;
+            }
+            catch (Exception e)
+            {                
                 return null;
             }
         }
@@ -39,7 +42,7 @@ namespace CommunicationLibrary
                     return addr;
                 }
             }
-            return null;
+            throw new NullReferenceException("no ipv4 addr found");
         }
 
         public Socket Accept(Socket serverSocket)
@@ -49,6 +52,10 @@ namespace CommunicationLibrary
                 return serverSocket.Accept();
             }
             catch (SocketException se)
+            {
+                return null;
+            }
+            catch (Exception ex)
             {
                 return null;
             }

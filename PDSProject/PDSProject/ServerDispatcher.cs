@@ -373,10 +373,17 @@ namespace PDSProject
             {
                 byte[] data = new byte[1024];
                 int bytesReadNum = server.Receive(data, client.GetSocket());
-                ThreadPool.QueueUserWorkItem(new WaitCallback(HandleInput), new List<Object>(){bytesReadNum, data, client});
+                if (bytesReadNum > 0)
+                {
+                    ThreadPool.QueueUserWorkItem(new WaitCallback(HandleInput), new List<Object>() { bytesReadNum, data, client });
+                }
+                else
+                {
+                    break;
+                }
             }
-            socket.Shutdown(SocketShutdown.Both);
-            socket.Close();
+            server.Shutdown(socket, SocketShutdown.Both);
+            server.Close(socket);
         }
 
 
@@ -426,21 +433,22 @@ namespace PDSProject
                     System.Buffer.BlockCopy(actualData, ProtocolUtils.TOKEN_DIM, requestData, 0, bytesReadNum - ProtocolUtils.TOKEN_DIM);
                     string token = Convert.ToBase64String(byteToken);
                                        
-                   
                     RequestState request = new RequestState();
                     request.client = client;
                     request.data = requestData;
                     request.token = token;
-
-                    //DispatchRequest(request);
+                    
                     Thread thread = new Thread(() => DispatchRequest(request));
                     thread.SetApartmentState(ApartmentState.STA);
                     thread.Start();
-                    //ThreadPool.QueueUserWorkItem(new WaitCallback(DispatchRequest), request);       
+                }
+                else
+                {
+                    break;
                 }                   
             }
-            client.GetSocket().Shutdown(SocketShutdown.Both);
-            client.GetSocket().Close();
+            server.Shutdown(client.GetSocket(), SocketShutdown.Both);
+            server.Close(client.GetSocket());
         }
  
 
