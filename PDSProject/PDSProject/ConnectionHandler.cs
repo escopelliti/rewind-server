@@ -19,10 +19,12 @@ namespace CommunicationLibrary
         private ServerDispatcher dispatcher;
         public ushort DataPort { get; set; }
         public ushort CmdPort { get; set; }
+        private MainForm mainForm;
          
         //ci dovra essere una struttura che gestisce tutte le connessioni/socket in entrata
         public ConnectionHandler(MainForm mainForm, Configuration.Configuration conf)
         {
+            this.mainForm = mainForm;
             ServerChannel = new Channel();
             this.server = new ServerCommunicationManager();
             dispatcher = new ServerDispatcher(server, mainForm, conf);
@@ -119,7 +121,17 @@ namespace CommunicationLibrary
                 if (!(clientSocket == null))
                 {
                     newClient.SetSocket(clientSocket);
-                    dispatcher.StartListeningToData(newClient);
+
+                    try
+                    {
+                        dispatcher.StartListeningToData(newClient);
+                    }
+                    catch (Exception ex)
+                    {
+                        StopListeningData();
+                        this.closed = true;
+                        mainForm.StopFeedbackIcon();
+                    }
                 }
             }
 

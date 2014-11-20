@@ -347,5 +347,11 @@ namespace PDSProject
         {
             this.Close();
         }
+
+        public void StopFeedbackIcon()
+        {
+            feedbackNotifyIcon.Visible = false;
+            timer.Tick -= eventHandler;
+        }
     }
 }

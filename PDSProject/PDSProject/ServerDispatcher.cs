@@ -384,6 +384,7 @@ namespace PDSProject
             }
             server.Shutdown(socket, SocketShutdown.Both);
             server.Close(socket);
+            throw new Exception("server has to be closed");
         }
 
 
