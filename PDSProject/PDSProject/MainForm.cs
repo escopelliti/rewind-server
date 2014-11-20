@@ -86,7 +86,7 @@ namespace PDSProject
                 {
                     Application.Exit();
                 }
-                connHandler.Listen();
+                connHandler.ListenCmd();
             }
             catch (Exception ex)
             {
@@ -94,9 +94,9 @@ namespace PDSProject
             }
         }
 
-        private void StopListening()
+        private void StopListeningCmd()
         {
-            connHandler.StopListening();    
+            connHandler.StopListeningCmd();    
         }
 
         private void StartBackgroundWorker()
@@ -166,11 +166,16 @@ namespace PDSProject
             {
                 timer.Tick += eventHandler;
                 feedbackNotifyIcon.Visible = true;
+                this.connHandler.ListenData();
+                this.connHandler.closed = false;
+                //ascolto data
             }
             else
             {
                 feedbackNotifyIcon.Visible = false;
                 timer.Tick -= eventHandler;
+                this.connHandler.StopListeningData();
+                this.connHandler.closed = true;
             }
                        
         }

@@ -12,9 +12,9 @@ namespace CommunicationLibrary
 {
     public class ConnectionHandler
     {
-        private bool closed = false; 
+        public bool closed = false; 
         private ServerCommunicationManager server;
-        private Channel serverChannel;
+        public Channel ServerChannel { get; set; }
         private ServerDispatcher dispatcher;
         public ushort DataPort { get; set; }
         public ushort CmdPort { get; set; }
@@ -22,39 +22,50 @@ namespace CommunicationLibrary
         //ci dovra essere una struttura che gestisce tutte le connessioni/socket in entrata
         public ConnectionHandler(MainForm mainForm, Configuration.Configuration conf)
         {
-            serverChannel = new Channel();
+            ServerChannel = new Channel();
             this.server = new ServerCommunicationManager();
             dispatcher = new ServerDispatcher(server, mainForm, conf);
-            serverChannel.SetDataSocket(server.CreateSocket(ProtocolType.Tcp));
-            serverChannel.SetCmdSocket(server.CreateSocket(ProtocolType.Tcp));
+            ServerChannel.SetCmdSocket(server.CreateSocket(ProtocolType.Tcp));          
         }
 
-        public void Listen()
+        public void ListenCmd()
         {
 
-            Socket cmdSocket = server.Listen(Dns.GetHostName(), CmdPort, serverChannel.GetCmdSocket());
-            Socket dataSocket = server.Listen(Dns.GetHostName(), DataPort, serverChannel.GetDataSocket());
-            if (cmdSocket == null || dataSocket == null)
+            Socket cmdSocket = server.Listen(Dns.GetHostName(), CmdPort, ServerChannel.GetCmdSocket());
+            //Socket dataSocket = server.Listen(Dns.GetHostName(), DataPort, ServerChannel.GetDataSocket());
+            if (cmdSocket == null /*|| dataSocket == null*/)
+            {
+                throw new Exception("Problem listening.");
+            }
+            ServerChannel.SetCmdSocket(cmdSocket);
+            //ServerChannel.SetDataSocket(dataSocket);
+            closed = false;
+            //faccio partire due thread che ascoltano sulle due socket e passano il Client al dispatcher            
+            Thread thread2 = new Thread(() => WaitForClient(ServerChannel.GetCmdSocket()));
+            thread2.Start();           
+        }
+
+        public void ListenData()
+        {            
+            ServerChannel.SetDataSocket(server.CreateSocket(ProtocolType.Tcp));
+            Socket dataSocket = server.Listen(Dns.GetHostName(), DataPort, ServerChannel.GetDataSocket());
+            if (dataSocket == null)
             {
                 throw new Exception("Problem listening.");
                 return;
             }
-            serverChannel.SetCmdSocket(cmdSocket);
-            serverChannel.SetDataSocket(dataSocket);
+            ServerChannel.SetDataSocket(dataSocket);
             closed = false;
-            //faccio partire due thread che ascoltano sulle due socket e passano il Client al dispatcher
-            Thread thread1 = new Thread(() => WaitForClientOnDataSocket(serverChannel.GetDataSocket()));
+            Thread thread1 = new Thread(() => WaitForClientOnDataSocket(ServerChannel.GetDataSocket()));
             thread1.Start();
-            Thread thread2 = new Thread(() => WaitForClient(serverChannel.GetCmdSocket()));
-            thread2.Start();           
         }
 
-        private void WaitForClientOnDataSocket(Socket serverSocket)
+        public void WaitForClientOnDataSocket(Socket serverDataSocket)
         {
             while (!closed)
-            {
+            {                
                 Client newClient = new Client();
-                Socket clientSocket = Accept(serverSocket);
+                Socket clientSocket = Accept(serverDataSocket);
                 if (!(clientSocket == null))
                 {
                     newClient.SetSocket(clientSocket);
@@ -96,16 +107,28 @@ namespace CommunicationLibrary
             }
         }
 
-        public void StopListening()
+        public void StopListeningCmd()
         {
-            if (serverChannel != null)
-            {
-                //server.Shutdown(serverChannel.GetCmdSocket(), SocketShutdown.Both);
-                server.Close(serverChannel.GetCmdSocket());
-                //server.Shutdown(serverChannel.GetDataSocket(), SocketShutdown.Both);
-                server.Close(serverChannel.GetDataSocket());
+            if (ServerChannel != null)
+            {                
+                server.Close(ServerChannel.GetCmdSocket());                                
                 closed = true;
             }
+        }
+
+        public void StopListeningData()
+        {
+            try
+            {
+                Socket socket = ServerChannel.GetDataSocket();                
+                //socket.Shutdown(SocketShutdown.Both);
+                socket.Close();
+            }
+            catch (SocketException ex)
+            {
+                return;
+            }
+            
         }
     }
 }

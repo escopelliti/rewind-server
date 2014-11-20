@@ -66,6 +66,7 @@ namespace PDSProject
         public delegate void AuthenticationEventHandler(Object sender, Object param);
         public event AuthenticationEventHandler authenticationHandler;
 
+        private static bool closed = false;
         public ServerDispatcher (ServerCommunicationManager runningServer, MainForm mainWindow, Configuration.Configuration conf) {
 
             server = runningServer;
@@ -140,7 +141,7 @@ namespace PDSProject
             SetActiveServerEventHandler handler = this.setActiveServerHandler;
             if (handler != null)
             {
-                handler(this, ea);
+                handler(this, ea);                
                 server.Send(new byte[16], ea.requestState.client.GetSocket());
             }
         }
@@ -368,12 +369,14 @@ namespace PDSProject
         public void StartListeningToData(Client client)
         {
             Socket socket = client.GetSocket();
-            while (true)
+            while (!closed)
             {
                 byte[] data = new byte[1024];
                 int bytesReadNum = server.Receive(data, client.GetSocket());
                 ThreadPool.QueueUserWorkItem(new WaitCallback(HandleInput), new List<Object>(){bytesReadNum, data, client});
             }
+            socket.Shutdown(SocketShutdown.Both);
+            socket.Close();
         }
 
 
@@ -407,7 +410,7 @@ namespace PDSProject
         private static void ListenToRequest(Object newClient)
         {
             Client client = (Client) newClient;
-            while (true)
+            while (!closed)
             {
                 //qui leggi le richieste e distribuisci ad un thread la richiesta
                 byte[] data = new byte[64*1024];                
@@ -429,13 +432,15 @@ namespace PDSProject
                     request.data = requestData;
                     request.token = token;
 
-
+                    //DispatchRequest(request);
                     Thread thread = new Thread(() => DispatchRequest(request));
                     thread.SetApartmentState(ApartmentState.STA);
                     thread.Start();
                     //ThreadPool.QueueUserWorkItem(new WaitCallback(DispatchRequest), request);       
                 }                   
-            } 
+            }
+            client.GetSocket().Shutdown(SocketShutdown.Both);
+            client.GetSocket().Close();
         }
  
 
