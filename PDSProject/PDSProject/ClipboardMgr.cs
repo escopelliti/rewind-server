@@ -35,31 +35,38 @@ namespace Clipboard
             RequestState requestState = (RequestState)param;
             filesToSend.Clear();
             clipboardContent = MainForm.GetClipboardContent();
-            switch (clipboardContent.contentType)
+            if (clipboardContent != null)
             {
-                case ClipboardPOCO.FILE_DROP_LIST:
-                    StringCollection strcoll = (StringCollection)clipboardContent.content;
-                    foreach (string s in strcoll)
-                    {
-                        if (File.Exists(s))
+                switch (clipboardContent.contentType)
+                {
+                    case ClipboardPOCO.FILE_DROP_LIST:
+                        StringCollection strcoll = (StringCollection)clipboardContent.content;
+                        foreach (string s in strcoll)
                         {
-                            FileInfo f = new FileInfo(s);
-                            currentClipboardDimension += f.Length;
+                            if (File.Exists(s))
+                            {
+                                FileInfo f = new FileInfo(s);
+                                currentClipboardDimension += f.Length;
+                            }
+                            else
+                            {
+                                currentClipboardDimension += GetDirectorySize(s);
+                            }
                         }
-                        else
-                        {
-                            currentClipboardDimension += GetDirectorySize(s);
-                        }
-                    }
-                    break;
-                case ClipboardPOCO.TEXT:
-                    String clipboardText = (String)clipboardContent.content;
-                    currentClipboardDimension = clipboardText.Length;
-                    break;
-                case ClipboardPOCO.IMAGE:
-                    byte[] img = (byte[])clipboardContent.content;
-                    currentClipboardDimension = img.Length;
-                    break;
+                        break;
+                    case ClipboardPOCO.TEXT:
+                        String clipboardText = (String)clipboardContent.content;
+                        currentClipboardDimension = clipboardText.Length;
+                        break;
+                    case ClipboardPOCO.IMAGE:
+                        byte[] img = (byte[])clipboardContent.content;
+                        currentClipboardDimension = img.Length;
+                        break;
+                }
+            }
+            else
+            {
+                currentClipboardDimension = 0;
             }
             byte[] byteToSend = BitConverter.GetBytes(currentClipboardDimension);
             currentClipboardDimension = 0;
