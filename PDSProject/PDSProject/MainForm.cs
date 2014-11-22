@@ -68,9 +68,8 @@ namespace PDSProject
         }
 
         private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
-        {
-            //this.sr.Stop();
-            Application.Exit();
+        {            
+            Environment.Exit(0);
         }
 
         private void StartListening()
@@ -81,13 +80,13 @@ namespace PDSProject
             {
                 if (sr.serviceNum <= 1)
                 {
-                    Application.Exit();
+                    Environment.Exit(-1);
                 }
                 connHandler.ListenCmd();
             }
             catch (Exception ex)
             {
-                Application.Exit();
+                Environment.Exit(-1);
             }
         }
 
@@ -169,7 +168,7 @@ namespace PDSProject
                 }
                 catch (Exception ex)
                 {
-                    Application.Exit();
+                    Environment.Exit(-1);
                 }
                 this.connHandler.closed = false;
                 //ascolto data
@@ -345,7 +344,7 @@ namespace PDSProject
 
         private void menuItem1_Click(object Sender, EventArgs e)
         {
-            this.Close();
+            this.Close();            
         }
 
         public void StopFeedbackIcon()
