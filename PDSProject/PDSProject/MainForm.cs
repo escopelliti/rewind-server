@@ -58,8 +58,8 @@ namespace PDSProject
                 conf = confMgr.ReadConf();
                 connHandler = new ConnectionHandler(this, conf);
                 Window_StateChanged(new EventArgs());                                                
-                sr = new Discovery.ServiceRegister(Convert.ToUInt16(conf.DataPort), Convert.ToUInt16(conf.CmdPort));                
-                StartListening();
+                sr = new Discovery.ServiceRegister(Convert.ToUInt16(conf.DataPort), Convert.ToUInt16(conf.CmdPort), this);                
+                //StartListening();
             }
             else
             {
@@ -77,11 +77,7 @@ namespace PDSProject
             connHandler.CmdPort = Convert.ToUInt16(conf.CmdPort);
             connHandler.DataPort = Convert.ToUInt16(conf.DataPort);
             try
-            {
-                if (sr.serviceNum <= 1)
-                {
-                    Environment.Exit(-1);
-                }
+            {               
                 connHandler.ListenCmd();
             }
             catch (Exception ex)
@@ -285,6 +281,12 @@ namespace PDSProject
             Window_StateChanged(e);
         }
 
+        public void OnServiceRegisterd(object sender, EventArgs e)
+        {
+            Thread Listener = new Thread(new ThreadStart(StartListening));
+            Listener.Start();
+        }
+
         private void button1_Click(object sender, EventArgs e)
         {
             string psw = this.textBox1.Text;
@@ -313,9 +315,7 @@ namespace PDSProject
                     {
                         conf = confMgr.ReadConf();
                         connHandler = new ConnectionHandler(this, conf);
-                        sr = new Discovery.ServiceRegister(Convert.ToUInt16(dataPort), Convert.ToUInt16(cmdPort));                        
-                        Thread Listener = new Thread(new ThreadStart(StartListening));
-                        Listener.Start();
+                        sr = new Discovery.ServiceRegister(Convert.ToUInt16(dataPort), Convert.ToUInt16(cmdPort), this);                        
                     }
                     
                     this.WindowState = FormWindowState.Minimized;
