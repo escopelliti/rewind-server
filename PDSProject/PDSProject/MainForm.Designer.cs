@@ -1,4 +1,4 @@
-﻿namespace PDSProject
+﻿namespace MainApp
 {
     partial class MainForm
     {

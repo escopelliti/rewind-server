@@ -1,15 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Newtonsoft.Json;
 
 namespace Configuration
 {
     public class ConfigurationMgr
     {
-
         public void WriteConf(ushort dataPort, ushort cmdPort, string pswDigest)
         {
             {
@@ -18,7 +13,7 @@ namespace Configuration
                 conf.DataPort = dataPort.ToString();
                 conf.Psw = pswDigest;
                 String jsonConf = JsonConvert.SerializeObject(conf);
-                using (var stream = new System.IO.StreamWriter("config.json", false))
+                using (var stream = new System.IO.StreamWriter(CONFIG_FILE, false))
                 {
                     stream.Write(jsonConf);
                     stream.Close();
@@ -26,10 +21,9 @@ namespace Configuration
             }
         }
 
-
         public bool ExistConf()
         {
-            return System.IO.File.Exists("config.json");
+            return System.IO.File.Exists(CONFIG_FILE);
         }
 
         public Configuration ReadConf()
@@ -38,7 +32,7 @@ namespace Configuration
             {
                 if (!ExistConf())
                     return null;
-                String jsonConf = System.IO.File.ReadAllText("config.json");
+                String jsonConf = System.IO.File.ReadAllText(CONFIG_FILE);
                 Configuration conf = JsonConvert.DeserializeObject<Configuration>(jsonConf);
                 return conf;
             }
@@ -47,5 +41,6 @@ namespace Configuration
                 return null;
             }
         }
-    }
+        private const String CONFIG_FILE = "config.json";
+    }    
 }

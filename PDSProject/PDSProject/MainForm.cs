@@ -7,14 +7,16 @@ using System.Linq;
 using System.Text;
 using System.Windows.Forms;
 using System.Collections.Specialized;
-using CommunicationLibrary;
+using ConnectionModule.CommunicationLibrary;
 using Newtonsoft.Json;
 using System.Threading;
 using Clipboard;
 using System.IO;
 using System.Security.Cryptography;
+using ConnectionModule;
+using GenericDataStructure;
 
-namespace PDSProject
+namespace MainApp
 {
     public partial class MainForm : Form
     {
@@ -129,10 +131,7 @@ namespace PDSProject
         {
             if (this.WindowState == FormWindowState.Minimized)
             {
-                this.ShowInTaskbar = false;
-                mainNotifyIcon.BalloonTipTitle = "Minimize Sucessful";
-                mainNotifyIcon.BalloonTipText = "Minimized the app ";
-                mainNotifyIcon.ShowBalloonTip(400);
+                this.ShowInTaskbar = false;                                
                 mainNotifyIcon.Visible = true;
             }
             else if (this.WindowState == FormWindowState.Normal)
@@ -158,6 +157,9 @@ namespace PDSProject
             {
                 timer.Tick += eventHandler;
                 feedbackNotifyIcon.Visible = true;
+                mainNotifyIcon.BalloonTipTitle = "Connesso";
+                mainNotifyIcon.BalloonTipText = "Un computer si è appena connesso";
+                mainNotifyIcon.ShowBalloonTip(400);
                 try
                 {
                     this.connHandler.ListenData();
@@ -172,6 +174,9 @@ namespace PDSProject
             else
             {
                 feedbackNotifyIcon.Visible = false;
+                mainNotifyIcon.BalloonTipTitle = "In attesa...";
+                mainNotifyIcon.BalloonTipText = "In attesa di connessione";
+                mainNotifyIcon.ShowBalloonTip(400);
                 timer.Tick -= eventHandler;
                 this.connHandler.StopListeningData();
                 this.connHandler.closed = true;

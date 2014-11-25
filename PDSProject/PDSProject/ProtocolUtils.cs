@@ -1,9 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.IO;
 using System.Collections.Concurrent;
 
 namespace Protocol
@@ -66,7 +61,5 @@ namespace Protocol
             protocolDictionary[FOCUS_OFF] = FOCUS_OFF;
             protocolDictionary[TRY_AUTHENTICATE] = TRY_AUTHENTICATE;
         }
-
-
     }
 }

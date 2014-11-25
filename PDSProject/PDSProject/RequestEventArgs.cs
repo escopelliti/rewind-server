@@ -1,10 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using ConnectionModule;
 
-namespace PDSProject
+namespace GenericDataStructure
 {
     public class RequestEventArgs : EventArgs
     {
@@ -13,6 +10,5 @@ namespace PDSProject
         public RequestEventArgs(RequestState reqState) {
             this.requestState = reqState;
         }
-
     }
 }

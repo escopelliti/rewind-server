@@ -3,10 +3,12 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using PDSProject;
+using ConnectionModule;
 using System.Collections.Specialized;
 using Protocol;
 using System.IO;
+using MainApp;
+using GenericDataStructure;
 
 namespace Clipboard
 {

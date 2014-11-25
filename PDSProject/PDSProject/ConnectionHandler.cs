@@ -1,15 +1,12 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Net.Sockets;
 using System.Threading;
+using System.Net.Sockets;
 using System.Net;
-using PDSProject;
+using MainApp;
 using System.Windows;
+using ConnectionModule.CommunicationLibrary;
 
-namespace CommunicationLibrary
+namespace ConnectionModule
 {
     public class ConnectionHandler
     {
@@ -20,8 +17,7 @@ namespace CommunicationLibrary
         public ushort DataPort { get; set; }
         public ushort CmdPort { get; set; }
         private MainForm mainForm;
-         
-        //ci dovra essere una struttura che gestisce tutte le connessioni/socket in entrata
+                 
         public ConnectionHandler(MainForm mainForm, Configuration.Configuration conf)
         {
             this.mainForm = mainForm;
@@ -32,7 +28,7 @@ namespace CommunicationLibrary
             Socket cmdSocket = InitSocket();
             if (cmdSocket == null)
             {
-                System.Windows.MessageBox.Show("Sembra esserci qualche problema, prova a riavviare l'applicazione", "Attenzione!", MessageBoxButton.OK, MessageBoxImage.Error);
+                System.Windows.MessageBox.Show(HOUSTON_PROBLEM, "Attenzione!", MessageBoxButton.OK, MessageBoxImage.Error);
             }
             else
             {
@@ -45,12 +41,12 @@ namespace CommunicationLibrary
             Socket cmdSocket = server.Listen(Dns.GetHostName(), CmdPort, ServerChannel.GetCmdSocket());            
             if (cmdSocket == null)
             {
-                System.Windows.MessageBox.Show("Sembra esserci qualche problema, prova a riavviare l'applicazione", "Attenzione!", MessageBoxButton.OK, MessageBoxImage.Error);
+                System.Windows.MessageBox.Show(HOUSTON_PROBLEM, "Attenzione!", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
             ServerChannel.SetCmdSocket(cmdSocket);            
             closed = false;
-            //faccio partire due thread che ascoltano sulle due socket e passano il Client al dispatcher            
+           
             try
             {
                 Thread cmdThread = new Thread(() => WaitForClient(ServerChannel.GetCmdSocket()));
@@ -85,14 +81,14 @@ namespace CommunicationLibrary
             Socket dataSocket = InitSocket();
             if (dataSocket == null)
             {
-                System.Windows.MessageBox.Show("Sembra esserci qualche problema, prova a riavviare l'applicazione", "Attenzione!", MessageBoxButton.OK, MessageBoxImage.Error);
+                System.Windows.MessageBox.Show(HOUSTON_PROBLEM, "Attenzione!", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }            
             ServerChannel.SetDataSocket(dataSocket);            
             dataSocket = server.Listen(Dns.GetHostName(), DataPort, dataSocket);
             if (dataSocket == null)
             {
-                System.Windows.MessageBox.Show("Sembra esserci qualche problema, prova a riavviare l'applicazione", "Attenzione!", MessageBoxButton.OK, MessageBoxImage.Error);
+                System.Windows.MessageBox.Show(HOUSTON_PROBLEM, "Attenzione!", MessageBoxButton.OK, MessageBoxImage.Error);
                 throw new NullReferenceException("no server socket available");
             }
             ServerChannel.SetDataSocket(dataSocket);
@@ -152,8 +148,7 @@ namespace CommunicationLibrary
         }
 
         private Socket Accept(Socket serverSock)
-        {
-            //mi memorizzo la socket del client in quache struttura e passo il controllo al dispatcher che ascolterà le richieste
+        {            
             return server.Accept(serverSock);           
         }
 
@@ -170,8 +165,7 @@ namespace CommunicationLibrary
         {
             try
             {
-                Socket socket = ServerChannel.GetDataSocket();                
-                //socket.Shutdown(SocketShutdown.Both);
+                Socket socket = ServerChannel.GetDataSocket();                                
                 socket.Close();
             }
             catch (SocketException ex)
@@ -180,5 +174,7 @@ namespace CommunicationLibrary
             }
             
         }
+
+        private const String HOUSTON_PROBLEM = "Sembra esserci qualche problema, prova a riavviare l'applicazione";
     }
 }

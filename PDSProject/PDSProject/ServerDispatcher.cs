@@ -2,21 +2,22 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using System.Threading;
 using System.Net.Sockets;
-using CommunicationLibrary;
+using ConnectionModule.CommunicationLibrary;
 using System.IO;
 using System.Collections.Concurrent;
-
+using MainApp;
 using Clipboard;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Protocol;
 using System.Drawing;
+using GenericDataStructure;
 using System.Runtime.InteropServices;
+using NativeStructure;
 
-namespace PDSProject
+namespace ConnectionModule
 {
     class ServerDispatcher
     {
@@ -374,7 +375,7 @@ namespace PDSProject
                 byte[] data = new byte[1024];
                 int bytesReadNum = server.Receive(data, client.GetSocket());
                 if (bytesReadNum > 0)
-                {
+                {                    
                     ThreadPool.QueueUserWorkItem(new WaitCallback(HandleInput), new List<Object>() { bytesReadNum, data, client });
                 }
                 else
@@ -399,7 +400,7 @@ namespace PDSProject
                 byte[] actualData = new byte[bytesReadNum];
                 System.Buffer.BlockCopy(data, 0, actualData, 0, bytesReadNum);
                 string json = Encoding.Unicode.GetString(actualData);
-                INPUT input = JsonConvert.DeserializeObject<INPUT>(json);
+                INPUT input = JsonConvert.DeserializeObject<INPUT>(json);                
                 if (input.type == 0) { 
                     float screenW = System.Windows.Forms.Screen.PrimaryScreen.Bounds.Width;
                     float screenH = System.Windows.Forms.Screen.PrimaryScreen.Bounds.Height;

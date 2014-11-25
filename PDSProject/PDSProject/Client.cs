@@ -1,23 +1,15 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Net.Sockets;
 
-namespace PDSProject
+namespace ConnectionModule
 {
     public class Client
     {
-
-        private Socket socket;
-        //some other stuff about a client (its name?)
-
+        private Socket socket;        
         public Socket GetSocket()
         {
             return socket;
         }
-
         public void SetSocket(Socket socket)
         {
             this.socket = socket;
