@@ -23,6 +23,11 @@ namespace Clipboard
         private List<String> filesToSend;
         private byte[] imageBytes;
 
+        public String CurrentContentToPaste { get; set; }        
+        public String TextToPaste { get; set; }
+        public System.Drawing.Image ImgToPaste { get; set; }
+
+
         public ClipboardMgr()
         {
             filesToSend = new List<string>();
@@ -30,6 +35,7 @@ namespace Clipboard
             currentFileNum = 0;
             offset = 0;
             offset1 = 0;
+            CurrentContentToPaste = "NONE";
         }
 
         public void OnGetDimensionRequest(Object sender, Object param)

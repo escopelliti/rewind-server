@@ -67,6 +67,9 @@ namespace ConnectionModule
         public delegate void AuthenticationEventHandler(Object sender, Object param);
         public event AuthenticationEventHandler authenticationHandler;
 
+        public delegate void RemotePasteEventHandler(Object sender, RequestEventArgs param);
+        public event RemotePasteEventHandler remotePasteHandler;
+
         private static bool closed = false;
         public ServerDispatcher (ServerCommunicationManager runningServer, MainForm mainWindow, Configuration.Configuration conf) {
 
@@ -118,6 +121,9 @@ namespace ConnectionModule
 
             authenticationHandler += OnTryAuthentication;
             dispatch[ProtocolUtils.TRY_AUTHENTICATE] = new Action<Object>(obj => OnTryToAuth(new RequestEventArgs((RequestState)obj)));
+
+            remotePasteHandler += ApplyRemotePaste;
+            dispatch[ProtocolUtils.REMOTE_PASTE] = new Action<Object>(obj => OnRemotePaste(new RequestEventArgs((RequestState)obj)));
         }
 
         private void OnTryAuthentication(object sender, object param)
@@ -137,6 +143,28 @@ namespace ConnectionModule
             server.Send(Encoding.Unicode.GetBytes(toSend), rs.client.GetSocket());
         }
 
+        private void ApplyRemotePaste(object sender, RequestEventArgs param)
+        {
+            RequestState rs = (RequestState)param.requestState;
+            switch (clipboardMgr.CurrentContentToPaste)
+            {
+
+                case ProtocolUtils.SET_CLIPBOARD_TEXT:
+                    MainForm.mainForm.Invoke(MainForm.clipboardTextDelegate, clipboardMgr.TextToPaste);                    
+                    break;
+                case ProtocolUtils.TRANSFER_FILES:
+                    MainForm.mainForm.Invoke(MainForm.clipboardFilesDelegate, fileDropList);
+                    break;
+                case ProtocolUtils.TRANSFER_IMAGE:
+                    MainForm.mainForm.Invoke(MainForm.clipboardImageDelegate, clipboardMgr.ImgToPaste);
+                    break;
+                default:
+                    break;
+            }
+            clipboardMgr.CurrentContentToPaste = "NONE";
+        }
+
+
         private void OnSetServerFocus(RequestEventArgs ea)
         {
             SetActiveServerEventHandler handler = this.setActiveServerHandler;
@@ -150,6 +178,15 @@ namespace ConnectionModule
         private void OnTryToAuth(RequestEventArgs ea)
         {
             AuthenticationEventHandler handler = this.authenticationHandler;
+            if (handler != null)
+            {
+                handler(this, ea);
+            }
+        }
+
+        private void OnRemotePaste(RequestEventArgs ea)
+        {
+            RemotePasteEventHandler handler = this.remotePasteHandler;
             if (handler != null)
             {
                 handler(this, ea);
@@ -204,7 +241,7 @@ namespace ConnectionModule
             server.Send(Encoding.Unicode.GetBytes(requestState.token), requestState.client.GetSocket());
         }
 
-        private static void ReceiveDataForClipboard(Object source, Object param)
+        private void ReceiveDataForClipboard(Object source, Object param)
         {
             RequestState requestState = (RequestState)param;
             string filename = ProtocolUtils.protocolDictionary[requestState.type];
@@ -231,7 +268,7 @@ namespace ConnectionModule
             }            
         }
 
-        private static void CreateImageForClipboard(string filename)
+        private void CreateImageForClipboard(string filename)
         {
             Image image = null;
             byte[] bytes = File.ReadAllBytes(filename);
@@ -242,7 +279,8 @@ namespace ConnectionModule
                 ms.Close();
             }
             File.Delete(filename);
-            MainForm.mainForm.Invoke(MainForm.clipboardImageDelegate, image);  
+            clipboardMgr.ImgToPaste = image;
+            clipboardMgr.CurrentContentToPaste = ProtocolUtils.TRANSFER_IMAGE;             
         }
 
         private void MoveByteToFiles(Object source, Object param)
@@ -269,7 +307,7 @@ namespace ConnectionModule
                         {//custom exception would be better than this
                             throw new Exception("Request not present in the dictionary");
                         }
-                        MainForm.mainForm.Invoke(MainForm.clipboardFilesDelegate, fileDropList);
+                        clipboardMgr.CurrentContentToPaste = ProtocolUtils.TRANSFER_FILES;                        
                         currentFileNum = 0;
                         filesToReceive.Clear();
                         fileDropList.Clear();
@@ -352,7 +390,8 @@ namespace ConnectionModule
         private void NewClipboardDataToPaste(Object source, Object param)
         {            
             StandardRequest stdRequest = ((RequestState)param).stdRequest;
-            MainForm.mainForm.Invoke(MainForm.clipboardTextDelegate, stdRequest.content.ToString());
+            clipboardMgr.TextToPaste = stdRequest.content.ToString();
+            clipboardMgr.CurrentContentToPaste = ProtocolUtils.SET_CLIPBOARD_TEXT;            
             RequestState value = new RequestState();
             if (!requestDictionary.TryRemove(((RequestState)param).token, out value))
             {//custom exception would be better than this
@@ -456,26 +495,40 @@ namespace ConnectionModule
 
         private static void DispatchRequest(object request)
         {
-            RequestState newRequest = (RequestState)request;            
-            if (requestDictionary.ContainsKey(newRequest.token))
+            RequestState newRequest = (RequestState)request;
+            try
             {
-                RequestState oldRequest = requestDictionary[newRequest.token];
-                newRequest.type = oldRequest.type;
-                newRequest.stdRequest = oldRequest.stdRequest;
-                requestDictionary[newRequest.token] = newRequest;
-                dispatch[newRequest.type].DynamicInvoke(newRequest);
+                if (requestDictionary.ContainsKey(newRequest.token))
+                {
+                    RequestState oldRequest = requestDictionary[newRequest.token];
+                    newRequest.type = oldRequest.type;
+                    newRequest.stdRequest = oldRequest.stdRequest;
+                    requestDictionary[newRequest.token] = newRequest;
+                    dispatch[newRequest.type].DynamicInvoke(newRequest);
+                }
+                else
+                {
+
+                    StandardRequest sr = JsonConvert.DeserializeObject<StandardRequest>(Encoding.Unicode.GetString(newRequest.data));
+                    //JObject receivedJson = JObject.Parse(Encoding.Unicode.GetString(newRequest.data));
+                    string type = sr.type;
+                    string requestType = ProtocolUtils.protocolDictionary[type];
+                    newRequest.type = requestType;
+                    newRequest.stdRequest = sr;
+                    requestDictionary[newRequest.token] = newRequest;
+                    dispatch[type].DynamicInvoke(newRequest);
+                }
             }
-            else
+            catch (JsonException ex)
             {
-                StandardRequest sr = JsonConvert.DeserializeObject<StandardRequest>(Encoding.Unicode.GetString(newRequest.data));
-                JObject receivedJson = JObject.Parse(Encoding.Unicode.GetString(newRequest.data));
-                string type = sr.type;
-                string requestType = ProtocolUtils.protocolDictionary[type];
-                newRequest.type = requestType;
-                newRequest.stdRequest = sr;
-                requestDictionary[newRequest.token] = newRequest;
-                dispatch[type].DynamicInvoke(newRequest);
+                //bad formatted json
+                return;
             }
+            catch (Exception ex)
+            {
+                //does not dictionaries have "wanted" entries? no problem
+                return;
+            }          
         }
     }
 
