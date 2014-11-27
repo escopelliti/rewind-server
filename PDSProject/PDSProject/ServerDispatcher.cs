@@ -139,7 +139,18 @@ namespace ConnectionModule
             StandardRequest stdReq = new StandardRequest();
             stdReq.type = sr.type;
             stdReq.content = result;
-            string toSend = JsonConvert.SerializeObject(stdReq);
+            String toSend;
+            try
+            {
+                toSend = JsonConvert.SerializeObject(stdReq);
+            }
+            catch (JsonException)
+            {
+                server.Shutdown(rs.client.GetSocket(), SocketShutdown.Both);
+                server.Close(rs.client.GetSocket());
+                return;
+            }
+            
             server.Send(Encoding.Unicode.GetBytes(toSend), rs.client.GetSocket());
         }
 
@@ -163,7 +174,6 @@ namespace ConnectionModule
             }
             clipboardMgr.CurrentContentToPaste = "NONE";
         }
-
 
         private void OnSetServerFocus(RequestEventArgs ea)
         {
@@ -220,7 +230,7 @@ namespace ConnectionModule
                 RequestState value = new RequestState();
                 if (!requestDictionary.TryRemove(ea.requestState.token, out value))
                 {//custom exception would be better than this
-                    throw new Exception("Request not present in the dictionary");
+                    requestDictionary.Clear();
                 }
             }
         }
@@ -244,41 +254,58 @@ namespace ConnectionModule
         private void ReceiveDataForClipboard(Object source, Object param)
         {
             RequestState requestState = (RequestState)param;
-            string filename = ProtocolUtils.protocolDictionary[requestState.type];
-            using (var stream = new FileStream(ProtocolUtils.TMP_DIR + filename, FileMode.Append))
+            try
             {
-                stream.Write(requestState.data, 0, requestState.data.Length);
-                stream.Close();
-                server.Send(Convert.FromBase64String(requestState.token), requestState.client.GetSocket());
-            }
-            if (new FileInfo(ProtocolUtils.TMP_DIR + filename).Length >= Convert.ToInt64(requestState.stdRequest.content.ToString())) 
-            {
-                
-                RequestState value = new RequestState();
-                if (!requestDictionary.TryRemove(requestState.token, out value))
-                {//custom exception would be better than this
-                    throw new Exception("Request not present in the dictionary");
-                }
-
-                //TODO : AVOID CONDITIONAL TEST
-                if (requestState.type == ProtocolUtils.TRANSFER_IMAGE)
+                string filename = ProtocolUtils.protocolDictionary[requestState.type];
+                using (var stream = new FileStream(ProtocolUtils.TMP_DIR + filename, FileMode.Append))
                 {
-                    CreateImageForClipboard(ProtocolUtils.TMP_DIR + filename);
+                    stream.Write(requestState.data, 0, requestState.data.Length);
+                    stream.Close();
+                    server.Send(Convert.FromBase64String(requestState.token), requestState.client.GetSocket());
                 }
-            }            
+                if (new FileInfo(ProtocolUtils.TMP_DIR + filename).Length >= Convert.ToInt64(requestState.stdRequest.content.ToString()))
+                {
+
+                    RequestState value = new RequestState();
+                    if (!requestDictionary.TryRemove(requestState.token, out value))
+                    {//custom exception would be better than this
+                        requestDictionary.Clear();
+                    }
+
+                    //TODO : AVOID CONDITIONAL TEST
+                    if (requestState.type == ProtocolUtils.TRANSFER_IMAGE)
+                    {
+                        CreateImageForClipboard(ProtocolUtils.TMP_DIR + filename);
+                    }
+                }
+            }
+            catch (Exception)
+            {
+                server.Shutdown(requestState.client.GetSocket(), SocketShutdown.Both);
+                server.Close(requestState.client.GetSocket());
+            }
         }
 
         private void CreateImageForClipboard(string filename)
         {
             Image image = null;
             byte[] bytes = File.ReadAllBytes(filename);
-            using (var ms = new MemoryStream(bytes))
+            try
             {
-                image = Image.FromStream(ms);
-                ms.Position = 0;
-                ms.Close();
+                using (var ms = new MemoryStream(bytes))
+                {
+                    image = Image.FromStream(ms);
+                    ms.Position = 0;
+                    ms.Close();
+                }            
+                File.Delete(filename);
             }
-            File.Delete(filename);
+            catch (Exception)
+            {
+                //no delete & no paste
+                return;
+            }
+            
             clipboardMgr.ImgToPaste = image;
             clipboardMgr.CurrentContentToPaste = ProtocolUtils.TRANSFER_IMAGE;             
         }
@@ -287,47 +314,65 @@ namespace ConnectionModule
         {
             RequestState request = (RequestState)param;
             byte[] actualData = new byte[request.data.Length - ProtocolUtils.TOKEN_DIM];
-            System.Buffer.BlockCopy(request.data, ProtocolUtils.TOKEN_DIM, actualData, 0, actualData.Length); 
-            if (currentFileNum < filesToReceive.Count)
+            try
             {
-                ProtocolUtils.FileStruct currentFile = filesToReceive.ElementAt(currentFileNum);             
-                using (var stream = new FileStream(ProtocolUtils.TMP_DIR + currentFile.dir + currentFile.name, FileMode.Append))
+
+                System.Buffer.BlockCopy(request.data, ProtocolUtils.TOKEN_DIM, actualData, 0, actualData.Length);
+                if (currentFileNum < filesToReceive.Count)
                 {
-                    stream.Write(actualData, 0, actualData.Length);
-                    stream.Close();
-                    server.Send(Convert.FromBase64String(request.token), request.client.GetSocket());
-                }
-                if (new FileInfo(ProtocolUtils.TMP_DIR + currentFile.dir + currentFile.name).Length == currentFile.size)
-                {
-                    currentFileNum++;
-                    if (currentFileNum == filesToReceive.Count)
+                    ProtocolUtils.FileStruct currentFile = filesToReceive.ElementAt(currentFileNum);
+                    using (var stream = new FileStream(ProtocolUtils.TMP_DIR + currentFile.dir + currentFile.name, FileMode.Append))
                     {
-                        RequestState value = new RequestState();
-                        if (!requestDictionary.TryRemove(request.token, out value))
-                        {//custom exception would be better than this
-                            throw new Exception("Request not present in the dictionary");
+                        stream.Write(actualData, 0, actualData.Length);
+                        stream.Close();
+                        server.Send(Convert.FromBase64String(request.token), request.client.GetSocket());
+                    }
+                    if (new FileInfo(ProtocolUtils.TMP_DIR + currentFile.dir + currentFile.name).Length == currentFile.size)
+                    {
+                        currentFileNum++;
+                        if (currentFileNum == filesToReceive.Count)
+                        {
+                            RequestState value = new RequestState();
+                            if (!requestDictionary.TryRemove(request.token, out value))
+                            {//custom exception would be better than this
+                                requestDictionary.Clear();
+                            }
+                            clipboardMgr.CurrentContentToPaste = ProtocolUtils.TRANSFER_FILES;
+                            currentFileNum = 0;
+                            filesToReceive.Clear();
+                            fileDropList.Clear();
                         }
-                        clipboardMgr.CurrentContentToPaste = ProtocolUtils.TRANSFER_FILES;                        
-                        currentFileNum = 0;
-                        filesToReceive.Clear();
-                        fileDropList.Clear();
                     }
                 }
+
+            }
+            catch (Exception)
+            {
+                server.Shutdown(request.client.GetSocket(), SocketShutdown.Both);
+                server.Close(request.client.GetSocket());
             }
         }
 
-        private static void DeleteFileDirContent(string toRemove) {
-
-            foreach (string dir in Directory.GetDirectories(toRemove)) {
-                DirectoryInfo dirInfo = new DirectoryInfo(dir);
-                dirInfo.Delete(true);
-            }
-            foreach (string file in Directory.GetFiles(toRemove))
+        private static void DeleteFileDirContent(string toRemove) 
+        {
+            try
             {
-                FileInfo fileInfo = new FileInfo(file);
-                fileInfo.Delete();
+                foreach (string dir in Directory.GetDirectories(toRemove))
+                {
+                    DirectoryInfo dirInfo = new DirectoryInfo(dir);
+                    dirInfo.Delete(true);
+                }
+                foreach (string file in Directory.GetFiles(toRemove))
+                {
+                    FileInfo fileInfo = new FileInfo(file);
+                    fileInfo.Delete();
+                }
             }
-
+            catch (Exception)
+            {
+                //nothing to do
+                return;
+            }
         }
 
 
@@ -347,8 +392,23 @@ namespace ConnectionModule
                 files = JsonConvert.DeserializeObject<List<ProtocolUtils.FileStruct>>(contentJson[ProtocolUtils.FILE].ToString());
                 filesToReceive.AddRange(files);
             }
-            catch (NullReferenceException ex)
+            catch (JsonException)
             {
+                server.Shutdown(requestState.client.GetSocket(), SocketShutdown.Both);
+                server.Close(requestState.client.GetSocket());
+                return;
+            }
+            catch (NullReferenceException)
+            {
+                server.Shutdown(requestState.client.GetSocket(), SocketShutdown.Both);
+                server.Close(requestState.client.GetSocket());
+                return;
+            }
+            catch (Exception)
+            {
+                server.Shutdown(requestState.client.GetSocket(), SocketShutdown.Both);
+                server.Close(requestState.client.GetSocket());
+                return;
             }
             foreach (ProtocolUtils.FileStruct fileStruct in files)
             {
@@ -358,9 +418,30 @@ namespace ConnectionModule
             foreach (var prop in contentJson) {     
                 if (prop.Key != ProtocolUtils.FILE)
                 {
-                    Directory.CreateDirectory(ProtocolUtils.TMP_DIR + prop.Key);
-                    CreateClipboardContent((JObject)contentJson[prop.Key], prop.Key);
-                    fileDropList.Add(fullTmpPath + prop.Key);
+                    try
+                    {
+                        Directory.CreateDirectory(ProtocolUtils.TMP_DIR + prop.Key);
+                        CreateClipboardContent((JObject)contentJson[prop.Key], prop.Key);
+                        fileDropList.Add(fullTmpPath + prop.Key);
+                    }                    
+                    catch (JsonException)
+                    {
+                        server.Shutdown(requestState.client.GetSocket(), SocketShutdown.Both);
+                        server.Close(requestState.client.GetSocket());
+                        return;
+                    }
+                    catch (NullReferenceException)
+                    {
+                        server.Shutdown(requestState.client.GetSocket(), SocketShutdown.Both);
+                        server.Close(requestState.client.GetSocket());
+                        return;
+                    }
+                    catch (Exception)
+                    {
+                        server.Shutdown(requestState.client.GetSocket(), SocketShutdown.Both);
+                        server.Close(requestState.client.GetSocket());
+                        return;
+                    }                    
                 }
             }
             server.Send(new byte[16], requestState.client.GetSocket());
@@ -368,24 +449,18 @@ namespace ConnectionModule
 
         private void CreateClipboardContent(JObject contentJson, string dir) 
         {
-            List<ProtocolUtils.FileStruct> files = new List<ProtocolUtils.FileStruct>();
-            try
+            List<ProtocolUtils.FileStruct> files = new List<ProtocolUtils.FileStruct>();            
+            files = JsonConvert.DeserializeObject<List<ProtocolUtils.FileStruct>>(contentJson[ProtocolUtils.FILE].ToString());
+            filesToReceive.AddRange(files);
+            foreach (var prop in contentJson) 
             {
-                files = JsonConvert.DeserializeObject<List<ProtocolUtils.FileStruct>>(contentJson[ProtocolUtils.FILE].ToString());
-                filesToReceive.AddRange(files);
-            }
-            catch (NullReferenceException ex)
-            {
-
-            }
-            foreach (var prop in contentJson) {
-                if(prop.Key != ProtocolUtils.FILE) {
+                if(prop.Key != ProtocolUtils.FILE) 
+                {
                     Directory.CreateDirectory(ProtocolUtils.TMP_DIR + dir + "\\" + prop.Key);
                     CreateClipboardContent((JObject)contentJson[prop.Key], dir + "\\" + prop.Key);                    
                 }
             }
         }
-
 
         private void NewClipboardDataToPaste(Object source, Object param)
         {            
@@ -395,11 +470,10 @@ namespace ConnectionModule
             RequestState value = new RequestState();
             if (!requestDictionary.TryRemove(((RequestState)param).token, out value))
             {//custom exception would be better than this
-                throw new Exception("Request not present in the dictionary");
+                requestDictionary.Clear();
             }
             server.Send(new byte[16], ((RequestState)param).client.GetSocket());
         }
-
 
         public void StartListeningTo(Client client)
         {
@@ -427,7 +501,6 @@ namespace ConnectionModule
             throw new Exception("server has to be closed");
         }
 
-
         private static void HandleInput(Object obj)
         {
             List<Object> objList = (List<Object>) obj;
@@ -450,10 +523,7 @@ namespace ConnectionModule
                 INPUT[] inputList = { input };
                 SendInput(1, inputList, Marshal.SizeOf(input));
             }
-        }
-
-        [DllImport("user32.dll", EntryPoint = "SendInput", SetLastError = true)]
-        public static extern UInt32 SendInput(uint numberOfInputs, INPUT[] inputs, int sizeOfInputStructure);
+        }        
 
         private static void ListenToRequest(Object newClient)
         {
@@ -492,7 +562,6 @@ namespace ConnectionModule
             server.Close(client.GetSocket());
         }
  
-
         private static void DispatchRequest(object request)
         {
             RequestState newRequest = (RequestState)request;
@@ -519,17 +588,20 @@ namespace ConnectionModule
                     dispatch[type].DynamicInvoke(newRequest);
                 }
             }
-            catch (JsonException ex)
+            catch (JsonException)
             {
                 //bad formatted json
                 return;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 //does not dictionaries have "wanted" entries? no problem
                 return;
             }          
         }
+
+        [DllImport("user32.dll", EntryPoint = "SendInput", SetLastError = true)]
+        public static extern UInt32 SendInput(uint numberOfInputs, INPUT[] inputs, int sizeOfInputStructure);
     }
 
     public struct RequestState

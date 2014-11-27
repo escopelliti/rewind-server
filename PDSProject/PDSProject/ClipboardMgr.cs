@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using ConnectionModule;
 using System.Collections.Specialized;
 using Protocol;
@@ -70,6 +68,8 @@ namespace Clipboard
                         byte[] img = (byte[])clipboardContent.content;
                         currentClipboardDimension = img.Length;
                         break;
+                    default:
+                        return;                        
                 }
             }
             else
@@ -104,12 +104,22 @@ namespace Clipboard
                     SetFilesToSendFromDropList();                                        
                     break;
                 case ClipboardPOCO.TEXT:
-                    byteToSend = TextStandardRequestToSend();
+                    byteToSend = TextStandardRequestToSend();                    
                     break;
                 case ClipboardPOCO.IMAGE:
                     imageBytes = (byte[])clipboardContent.content;
                     byteToSend = ImgStandardRequestToSend();
                     break;
+                default:
+                    ResetClassValue();
+                    return;
+            }
+            if (byteToSend == null)
+            {
+                ServerDispatcher.server.Shutdown(requestState.client.GetSocket(), System.Net.Sockets.SocketShutdown.Both);
+                ServerDispatcher.server.Close(requestState.client.GetSocket());
+                ResetClassValue();
+                return;
             }
             ServerDispatcher.server.Send(byteToSend, requestState.client.GetSocket());
             ResetClassValue();
@@ -128,7 +138,18 @@ namespace Clipboard
                     dim = (imageBytes.Length - (int)offset1);
                 }
                 byte[] chunk = new byte[dim];
-                System.Buffer.BlockCopy(imageBytes,(int) offset1, chunk, 0, dim);
+                try
+                {
+                    System.Buffer.BlockCopy(imageBytes, (int)offset1, chunk, 0, dim);
+                }
+                catch (Exception)
+                {
+                    //problem during bytes copy
+                    ServerDispatcher.server.Shutdown(rs.client.GetSocket(), System.Net.Sockets.SocketShutdown.Both);
+                    ServerDispatcher.server.Close(rs.client.GetSocket());
+                    return;
+                }
+                    
                 offset1 += chunkLength;
                 ServerDispatcher.server.Send(chunk, rs.client.GetSocket());
                 return;
@@ -138,7 +159,17 @@ namespace Clipboard
             if (lastBytes > 0)
             {
                 byte[] chunk = new byte[lastBytes];
-                System.Buffer.BlockCopy(imageBytes, (int) offset1, chunk, 0, lastBytes);
+                try
+                {
+                    System.Buffer.BlockCopy(imageBytes, (int)offset1, chunk, 0, lastBytes);                     
+                }
+                catch (Exception ex)
+                {
+                    ServerDispatcher.server.Shutdown(rs.client.GetSocket(), System.Net.Sockets.SocketShutdown.Both);
+                    ServerDispatcher.server.Close(rs.client.GetSocket());
+                    //problems during bytes copy
+                    return;
+                }                   
                 ServerDispatcher.server.Send(chunk, rs.client.GetSocket());
             }
         }
@@ -164,7 +195,17 @@ namespace Clipboard
             foreach (String s in fileDropListArray) {
                 if (!File.Exists(s))
                 {
-                     String[] subFiles = Directory.GetFiles(s, "*.*", SearchOption.AllDirectories);
+                    String[] subFiles = null;
+                    try
+                    {
+                        subFiles = Directory.GetFiles(s, "*.*", SearchOption.AllDirectories);
+                    } 
+                    catch (Exception) 
+                    {
+                        this.filesToSend.Clear();
+                        return;
+                    }
+                    
                     foreach(String file in subFiles)
                     {
                         this.filesToSend.Add(file);
@@ -188,33 +229,40 @@ namespace Clipboard
             long dim = 0;
             if (File.Exists(file))
                 {
-                    byte[] bytesFile = new byte[1024];                    
-                    using (var input = File.OpenRead(file))
+                    byte[] bytesFile = new byte[1024];
+                    try
                     {
-                        int bytesReadNum;
-                        dim = bytesFile.Length;
-                        if ((fileSize - offset) < bytesFile.Length)
+                        using (var input = File.OpenRead(file))
                         {
-                            dim = (fileSize - offset);
-                        }
-                        input.Position = offset;                        
-                        bytesReadNum = input.Read(bytesFile, 0, (int)dim);
-                        if (bytesReadNum > 0)
-                        {
-                            byte[] bytesFileToSend = new byte[bytesReadNum];
-                            System.Buffer.BlockCopy(bytesFile, 0, bytesFileToSend, 0, bytesReadNum);
-                            ServerDispatcher.server.Send(bytesFileToSend, rs.client.GetSocket());
-                            offset += bytesReadNum;
-                            
-                            if (offset >= new FileInfo(file).Length)
+                            int bytesReadNum;
+                            dim = bytesFile.Length;
+                            if ((fileSize - offset) < bytesFile.Length)
                             {
-                                currentFileNum++;
-                                offset = 0;
-                            }                                                        
+                                dim = (fileSize - offset);
+                            }
+                            input.Position = offset;
+                            bytesReadNum = input.Read(bytesFile, 0, (int)dim);
+                            if (bytesReadNum > 0)
+                            {
+                                byte[] bytesFileToSend = new byte[bytesReadNum];
+                                System.Buffer.BlockCopy(bytesFile, 0, bytesFileToSend, 0, bytesReadNum);
+                                ServerDispatcher.server.Send(bytesFileToSend, rs.client.GetSocket());
+                                offset += bytesReadNum;
+
+                                if (offset >= new FileInfo(file).Length)
+                                {
+                                    currentFileNum++;
+                                    offset = 0;
+                                }
+                            }
+                            input.Close();
                         }
-                        input.Close();
                     }
-                
+                    catch (Exception)
+                    {
+                        ServerDispatcher.server.Shutdown(rs.client.GetSocket(), System.Net.Sockets.SocketShutdown.Both);
+                        ServerDispatcher.server.Close(rs.client.GetSocket());
+                    }                                      
             }
         }
 
@@ -224,6 +272,10 @@ namespace Clipboard
             sr.type = ProtocolUtils.SET_CLIPBOARD_IMAGE;
             sr.content = imageBytes.Length.ToString();
             String toSend = JSON.JSONFactory.CreateJSONStandardRequest(sr);
+            if (toSend == null)
+            {
+                return null;
+            }
             return Encoding.Unicode.GetBytes(toSend);
         }
 
@@ -234,6 +286,10 @@ namespace Clipboard
             sr.type = ProtocolUtils.SET_CLIPBOARD_TEXT;
             sr.content = text;
             String toSend = JSON.JSONFactory.CreateJSONStandardRequest(sr);
+            if (toSend == null)
+            {
+                return null;
+            }
             return Encoding.Unicode.GetBytes(toSend);
         }
        
@@ -243,6 +299,10 @@ namespace Clipboard
             this.fileDropListArray = new String[fileDropList.Count];
             fileDropList.CopyTo(fileDropListArray, 0);
             string toSend = JSON.JSONFactory.CreateFileTransferJSONRequest(Protocol.ProtocolUtils.SET_CLIPBOARD_FILES, fileDropListArray);
+            if (toSend == null)
+            {
+                return null;
+            }
             return Encoding.Unicode.GetBytes(toSend);
         }
     }

@@ -13,7 +13,20 @@ namespace JSON
 
         public static String CreateJSONStandardRequest(StandardRequest sr)
         {
-            return JsonConvert.SerializeObject(sr);
+            string json;
+            try
+            {
+                json = JsonConvert.SerializeObject(sr);
+            }
+            catch (JsonException)
+            {
+                return null;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+            return json;
         }
 
         public static string CreateFileTransferJSONRequest(String type, string[] array)
@@ -23,33 +36,40 @@ namespace JSON
             JObject contentJson = new JObject();
             List<ProtocolUtils.FileStruct> fileStructList = new List<ProtocolUtils.FileStruct>();
             string initialDir = currentDir;
-            foreach (string file in array)
+            try
             {
-                
-                string name;              
-                if (Directory.Exists(file))
+                foreach (string file in array)
                 {
-                    name = Path.GetFileName(Path.GetFullPath(file));
-                    JObject json = new JObject();                    
-                    currentDir = currentDir + name + "\\";
-                    json = CreateFileTransferRequest(file, json);
-                    currentDir = initialDir;
-                    contentJson.Add(name, json);
-                }
-                else
-                {
-                    name = Path.GetFileName(file);
-                    FileInfo fileInfo = new FileInfo(file);
-                    ProtocolUtils.FileStruct fileStruct = new ProtocolUtils.FileStruct();
-                    fileStruct.name = fileInfo.Name;
 
-                    fileStruct.size = fileInfo.Length;
-                    fileStruct.dir = initialDir; 
-                    fileStructList.Add(fileStruct);
+                    string name;
+                    if (Directory.Exists(file))
+                    {
+                        name = Path.GetFileName(Path.GetFullPath(file));
+                        JObject json = new JObject();
+                        currentDir = currentDir + name + "\\";
+                        json = CreateFileTransferRequest(file, json);
+                        currentDir = initialDir;
+                        contentJson.Add(name, json);
+                    }
+                    else
+                    {
+                        name = Path.GetFileName(file);
+                        FileInfo fileInfo = new FileInfo(file);
+                        ProtocolUtils.FileStruct fileStruct = new ProtocolUtils.FileStruct();
+                        fileStruct.name = fileInfo.Name;
+
+                        fileStruct.size = fileInfo.Length;
+                        fileStruct.dir = initialDir;
+                        fileStructList.Add(fileStruct);
+                    }
                 }
+                contentJson.Add(ProtocolUtils.FILE, JsonConvert.SerializeObject(fileStructList));
+                request.Add(ProtocolUtils.CONTENT, contentJson);
             }
-            contentJson.Add(ProtocolUtils.FILE, JsonConvert.SerializeObject(fileStructList));
-            request.Add(ProtocolUtils.CONTENT, contentJson);
+            catch (Exception)
+            {
+                return null;
+            }
             return request.ToString();
         }
 
