@@ -14,11 +14,11 @@ namespace ConnectionModule.CommunicationLibrary
                 socket.SendBufferSize = 64 * 1024;
                 socket.ReceiveBufferSize = 64 * 1024;
             }
-            catch (SocketException ex)
+            catch (SocketException)
             {
                 return null;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 return null;
             }
@@ -31,11 +31,11 @@ namespace ConnectionModule.CommunicationLibrary
             {
                 socket.Send(toSend);
             }
-            catch (SocketException ex)
+            catch (SocketException)
             {
                 return;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 return;
             }
@@ -48,11 +48,11 @@ namespace ConnectionModule.CommunicationLibrary
             {
                 bytesRead = socket.Receive(bytes);
             }
-            catch (SocketException ex)
+            catch (SocketException)
             {
                 return 0;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 return 0;
             }
@@ -65,11 +65,11 @@ namespace ConnectionModule.CommunicationLibrary
             {
                 socket.Shutdown(shutdownMode);
             }
-            catch (SocketException ex)
+            catch (SocketException)
             {
                 return;
             }
-            catch (ObjectDisposedException ex)
+            catch (ObjectDisposedException)
             {
                 return;
             }
@@ -81,7 +81,7 @@ namespace ConnectionModule.CommunicationLibrary
             {
                 socket.Close();
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 return;
             }

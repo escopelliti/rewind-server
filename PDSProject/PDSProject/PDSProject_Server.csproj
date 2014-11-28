@@ -95,6 +95,7 @@
     <Compile Include="ConfigurationMgr.cs" />
     <Compile Include="ConnectionHandler.cs" />
     <Compile Include="Input.cs" />
+    <Compile Include="InputFactory.cs" />
     <Compile Include="JSONFactory.cs" />
     <Compile Include="MainForm.cs">
       <SubType>Form</SubType>

@@ -17,7 +17,9 @@ namespace ConnectionModule
         public ushort DataPort { get; set; }
         public ushort CmdPort { get; set; }
         private MainForm mainForm;
-                 
+
+        private const String HOUSTON_PROBLEM = "Sembra esserci qualche problema, prova a riavviare l'applicazione";
+ 
         public ConnectionHandler(MainForm mainForm, Configuration.Configuration conf)
         {
             this.mainForm = mainForm;
@@ -33,7 +35,7 @@ namespace ConnectionModule
             else
             {
                 ServerChannel.SetCmdSocket(cmdSocket);          
-            }            
+            }
         }
 
         public void ListenCmd()
@@ -114,6 +116,7 @@ namespace ConnectionModule
             {                
                 Client newClient = new Client();
                 Socket clientSocket = Accept(serverDataSocket);
+
                 if (!(clientSocket == null))
                 {
                     newClient.SetSocket(clientSocket);
@@ -122,7 +125,7 @@ namespace ConnectionModule
                     {
                         dispatcher.StartListeningToData(newClient);
                     }
-                    catch (Exception ex)
+                    catch (Exception)
                     {
                         StopListeningData();
                         this.closed = true;
@@ -130,7 +133,6 @@ namespace ConnectionModule
                     }
                 }
             }
-
         }
 
         private void WaitForClient(Socket serverSocket)
@@ -139,6 +141,8 @@ namespace ConnectionModule
             {
                 Client newClient = new Client();
                 Socket clientSocket = Accept(serverSocket);
+                clientSocket.ReceiveTimeout = 5000;
+
                 if (!(clientSocket == null))
                 {
                     newClient.SetSocket(clientSocket);
@@ -168,13 +172,10 @@ namespace ConnectionModule
                 Socket socket = ServerChannel.GetDataSocket();                                
                 socket.Close();
             }
-            catch (SocketException ex)
+            catch (SocketException)
             {
                 return;
             }
-            
         }
-
-        private const String HOUSTON_PROBLEM = "Sembra esserci qualche problema, prova a riavviare l'applicazione";
     }
 }

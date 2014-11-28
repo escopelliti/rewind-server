@@ -330,7 +330,6 @@ namespace ConnectionModule
 
         }
 
-
         private void NewClipboardFileToPaste(Object source, Object param)
         {
             String fullTmpPath = Path.GetFullPath(ProtocolUtils.TMP_DIR);
@@ -424,9 +423,18 @@ namespace ConnectionModule
             }
             server.Shutdown(socket, SocketShutdown.Both);
             server.Close(socket);
+            ResetKModifier();
             throw new Exception("server has to be closed");
         }
 
+        public static void ResetKModifier()
+        {
+            INPUT ctrlInputUp = InputFactory.CreateKeyUpInput(System.Windows.Forms.Keys.LControlKey);
+            INPUT shiftInputUp = InputFactory.CreateKeyUpInput(System.Windows.Forms.Keys.LShiftKey);
+            INPUT altInputUp = InputFactory.CreateKeyUpInput(System.Windows.Forms.Keys.LMenu);
+            INPUT[] inputList = { ctrlInputUp, shiftInputUp, altInputUp};
+            SendInput(3, inputList, Marshal.SizeOf(ctrlInputUp));
+        } 
 
         private static void HandleInput(Object obj)
         {
@@ -443,8 +451,8 @@ namespace ConnectionModule
                 if (input.type == 0) { 
                     float screenW = System.Windows.Forms.Screen.PrimaryScreen.Bounds.Width;
                     float screenH = System.Windows.Forms.Screen.PrimaryScreen.Bounds.Height;
-                    input.mi.dx = (UInt16)Math.Round(input.mi.dx * (65535 / screenW), 0);
-                    input.mi.dy = (UInt16)Math.Round(input.mi.dy * (65535 / screenH), 0);
+                    input.mi.pt.x = (UInt16)Math.Round(input.mi.pt.x * (65535 / screenW), 0);
+                    input.mi.pt.y = (UInt16)Math.Round(input.mi.pt.y * (65535 / screenH), 0);
                 }
                 server.Send(new byte[] { 0 }, socket);
                 INPUT[] inputList = { input };
@@ -490,8 +498,8 @@ namespace ConnectionModule
             }
             server.Shutdown(client.GetSocket(), SocketShutdown.Both);
             server.Close(client.GetSocket());
+            ResetKModifier();
         }
- 
 
         private static void DispatchRequest(object request)
         {
@@ -508,7 +516,6 @@ namespace ConnectionModule
                 }
                 else
                 {
-
                     StandardRequest sr = JsonConvert.DeserializeObject<StandardRequest>(Encoding.Unicode.GetString(newRequest.data));
                     //JObject receivedJson = JObject.Parse(Encoding.Unicode.GetString(newRequest.data));
                     string type = sr.type;
