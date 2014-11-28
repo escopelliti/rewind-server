@@ -5,6 +5,7 @@ using System.Net;
 using MainApp;
 using System.Windows;
 using ConnectionModule.CommunicationLibrary;
+using GenericDataStructure;
 
 namespace ConnectionModule
 {
@@ -17,7 +18,7 @@ namespace ConnectionModule
         public ushort DataPort { get; set; }
         public ushort CmdPort { get; set; }
         private MainForm mainForm;
-
+                 
         private const String HOUSTON_PROBLEM = "Sembra esserci qualche problema, prova a riavviare l'applicazione";
  
         public ConnectionHandler(MainForm mainForm, Configuration.Configuration conf)
@@ -30,12 +31,12 @@ namespace ConnectionModule
             Socket cmdSocket = InitSocket();
             if (cmdSocket == null)
             {
-                System.Windows.MessageBox.Show(HOUSTON_PROBLEM, "Attenzione!", MessageBoxButton.OK, MessageBoxImage.Error);
+                System.Windows.MessageBox.Show(StringConst.HOUSTON_PROBLEM, StringConst.HOUSTON_PROBLEM_TITLE, MessageBoxButton.OK, MessageBoxImage.Error);
             }
             else
             {
                 ServerChannel.SetCmdSocket(cmdSocket);          
-            }
+            }            
         }
 
         public void ListenCmd()
@@ -43,7 +44,7 @@ namespace ConnectionModule
             Socket cmdSocket = server.Listen(Dns.GetHostName(), CmdPort, ServerChannel.GetCmdSocket());            
             if (cmdSocket == null)
             {
-                System.Windows.MessageBox.Show(HOUSTON_PROBLEM, "Attenzione!", MessageBoxButton.OK, MessageBoxImage.Error);
+                System.Windows.MessageBox.Show(StringConst.HOUSTON_PROBLEM, StringConst.HOUSTON_PROBLEM_TITLE, MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
             ServerChannel.SetCmdSocket(cmdSocket);            
@@ -83,14 +84,14 @@ namespace ConnectionModule
             Socket dataSocket = InitSocket();
             if (dataSocket == null)
             {
-                System.Windows.MessageBox.Show(HOUSTON_PROBLEM, "Attenzione!", MessageBoxButton.OK, MessageBoxImage.Error);
+                System.Windows.MessageBox.Show(StringConst.HOUSTON_PROBLEM, StringConst.HOUSTON_PROBLEM_TITLE, MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }            
             ServerChannel.SetDataSocket(dataSocket);            
             dataSocket = server.Listen(Dns.GetHostName(), DataPort, dataSocket);
             if (dataSocket == null)
             {
-                System.Windows.MessageBox.Show(HOUSTON_PROBLEM, "Attenzione!", MessageBoxButton.OK, MessageBoxImage.Error);
+                System.Windows.MessageBox.Show(StringConst.HOUSTON_PROBLEM, StringConst.HOUSTON_PROBLEM_TITLE, MessageBoxButton.OK, MessageBoxImage.Error);
                 throw new NullReferenceException("no server socket available");
             }
             ServerChannel.SetDataSocket(dataSocket);
@@ -141,8 +142,6 @@ namespace ConnectionModule
             {
                 Client newClient = new Client();
                 Socket clientSocket = Accept(serverSocket);
-                clientSocket.ReceiveTimeout = 5000;
-
                 if (!(clientSocket == null))
                 {
                     newClient.SetSocket(clientSocket);

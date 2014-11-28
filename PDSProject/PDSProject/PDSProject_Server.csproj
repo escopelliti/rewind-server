@@ -115,6 +115,7 @@
     <Compile Include="ServerDispatcher.cs" />
     <Compile Include="ServiceRegister.cs" />
     <Compile Include="StandardRequest.cs" />
+    <Compile Include="StringConst.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />

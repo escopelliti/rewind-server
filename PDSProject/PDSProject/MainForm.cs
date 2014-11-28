@@ -44,29 +44,40 @@ namespace MainApp
         public MainForm()
         {
             InitializeComponent();
+            
             clipboardTextDelegate += new SetTextToClipboard(SetClipboardText);
             clipboardFilesDelegate += new SetFileDropListClipboard(SetClipboardFileDropList);
             clipboardImageDelegate += new SetImageToClipboard(SetClipboardImage);
             this.MouseHover += OnMouseHover;
             this.FormClosing += MainForm_FormClosing;
-            //leggi le porte dal file o se non esiste apri il pannello e le fai inserire e te le prendi;            
+            
             confMgr = new Configuration.ConfigurationMgr();
             conf = null;
             StartBackgroundWorker();
             InitTrayIcon();
             StartTimer();
+            InitServer();            
+        }
+
+        private void InitServer()
+        {
             if (confMgr.ExistConf())
             {
                 conf = confMgr.ReadConf();
+                if (conf == null)
+                {
+                    System.Windows.Forms.MessageBox.Show(StringConst.HOUSTON_PROBLEM, StringConst.HOUSTON_PROBLEM_TITLE, System.Windows.Forms.MessageBoxButtons.OK, System.Windows.Forms.MessageBoxIcon.Error);
+                    Environment.Exit(-1);
+                }
                 connHandler = new ConnectionHandler(this, conf);
-                Window_StateChanged(new EventArgs());                                                
-                sr = new Discovery.ServiceRegister(Convert.ToUInt16(conf.DataPort), Convert.ToUInt16(conf.CmdPort), this);                
-                //StartListening();
+                Window_StateChanged(new EventArgs());
+                sr = new Discovery.ServiceRegister(Convert.ToUInt16(conf.DataPort), Convert.ToUInt16(conf.CmdPort), this);               
             }
             else
             {
                 this.WindowState = FormWindowState.Normal;
-            }            
+            }
+
         }
 
         private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
@@ -82,7 +93,7 @@ namespace MainApp
             {               
                 connHandler.ListenCmd();
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 Environment.Exit(-1);
             }
@@ -107,15 +118,12 @@ namespace MainApp
 
             this.contextMenu1 = new System.Windows.Forms.ContextMenu();
             this.menuItem1 = new System.Windows.Forms.MenuItem();
-
-            // Initialize contextMenu1 
+             
             this.contextMenu1.MenuItems.AddRange(new System.Windows.Forms.MenuItem[] { this.menuItem1 });
-
-            // Initialize menuItem1 
+            
             this.menuItem1.Index = 0;
             this.menuItem1.Text = "Exit";
             this.menuItem1.Click += new System.EventHandler(this.menuItem1_Click);
-
 
             mainNotifyIcon = new System.Windows.Forms.NotifyIcon();
             mainNotifyIcon.Icon = new System.Drawing.Icon("..\\..\\..\\resources\\computer.ico");
@@ -157,25 +165,24 @@ namespace MainApp
             {
                 timer.Tick += eventHandler;
                 feedbackNotifyIcon.Visible = true;
-                mainNotifyIcon.BalloonTipTitle = "Connesso";
-                mainNotifyIcon.BalloonTipText = "Un computer si è appena connesso";
+                mainNotifyIcon.BalloonTipTitle = StringConst.CONNECTED;
+                mainNotifyIcon.BalloonTipText = StringConst.CONNECTED_INFO;
                 mainNotifyIcon.ShowBalloonTip(400);
                 try
                 {
                     this.connHandler.ListenData();
                 }
-                catch (Exception ex)
+                catch (Exception)
                 {
                     Environment.Exit(-1);
                 }
-                this.connHandler.closed = false;
-                //ascolto data
+                this.connHandler.closed = false;                
             }
             else
             {
                 feedbackNotifyIcon.Visible = false;
-                mainNotifyIcon.BalloonTipTitle = "In attesa...";
-                mainNotifyIcon.BalloonTipText = "In attesa di connessione";
+                mainNotifyIcon.BalloonTipTitle = StringConst.LISTENING;
+                mainNotifyIcon.BalloonTipText = StringConst.LISTENING_INFO;
                 mainNotifyIcon.ShowBalloonTip(400);
                 timer.Tick -= eventHandler;
                 this.connHandler.StopListeningData();
@@ -236,8 +243,8 @@ namespace MainApp
         }
 
         private void CreateComboboxRange(Object sender, DoWorkEventArgs e)
-        {            
-            ushort startingPort = 10000;
+        {
+            ushort startingPort = 50000;
             portRange = new ushort[(UInt16.MaxValue - startingPort) + 1];
             int counter = 0;
             while (startingPort < UInt16.MaxValue)
@@ -267,17 +274,41 @@ namespace MainApp
 
         private void SetClipboardText(string contentToPaste)
         {
-            System.Windows.Forms.Clipboard.SetText(contentToPaste);
+            try
+            {
+                System.Windows.Forms.Clipboard.SetText(contentToPaste);
+            }
+            catch (Exception)
+            {
+                //nothing to do
+                return;
+            }            
         }
 
         private void SetClipboardImage(Image image)
         {
-            System.Windows.Forms.Clipboard.SetImage(image);
+            try
+            {
+                System.Windows.Forms.Clipboard.SetImage(image);
+            }
+            catch (Exception)
+            {
+                //nothing to do
+                return;
+            }   
         }
 
         private void SetClipboardFileDropList(StringCollection fileDropList)
         {
-            System.Windows.Clipboard.SetFileDropList(fileDropList);
+            try
+            {
+                System.Windows.Clipboard.SetFileDropList(fileDropList);
+            }
+            catch (Exception)
+            {
+                //nothing to do
+                return;
+            }              
         }
 
         private void button2_Click(object sender, EventArgs e)
@@ -301,24 +332,19 @@ namespace MainApp
             {
                 if (dataPort != cmdPort) 
                 {
-                    byte[] bytes = Encoding.UTF8.GetBytes(psw);
-                    SHA256Managed hashstring = new SHA256Managed();
-                    byte[] hash = hashstring.ComputeHash(bytes);
-                     
-                    StringBuilder stringBuilder = new StringBuilder();
-                    foreach(byte b in hash)
-                    {
-                        stringBuilder.AppendFormat("{0:X2}", b);
-                    }
-                    string hashString = stringBuilder.ToString();
+                    String hashString = confMgr.CreateHashString(psw);
                     confMgr.WriteConf(dataPort, cmdPort, hashString);
                     if (sr != null)
                     {
-                        MessageBox.Show("Le modifiche saranno disponibili al riavvio dell'applicazione", "Informazione", MessageBoxButtons.OK, MessageBoxIcon.Information);                       
+                        MessageBox.Show(StringConst.CONF_CHANGED_MEX, StringConst.INFORMATION, MessageBoxButtons.OK, MessageBoxIcon.Information);                       
                     }
                     else
                     {
                         conf = confMgr.ReadConf();
+                        if (conf == null)
+                        {
+                            Environment.Exit(-1);
+                        }
                         connHandler = new ConnectionHandler(this, conf);
                         sr = new Discovery.ServiceRegister(Convert.ToUInt16(dataPort), Convert.ToUInt16(cmdPort), this);                        
                     }
@@ -328,25 +354,15 @@ namespace MainApp
                 } 
                 else
                 {
-                    MessageBox.Show("Le porte non possono avere lo stesso valore");
+                    MessageBox.Show(StringConst.DUPLICATED_PORT, StringConst.HOUSTON_PROBLEM_TITLE, MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }                 
             }
             else
             {
-                MessageBox.Show("Inserisci una password per continuare!");
+                MessageBox.Show(StringConst.PSW_ERROR, StringConst.HOUSTON_PROBLEM_TITLE, MessageBoxButtons.OK, MessageBoxIcon.Error);                
             }             
         }
-
-        private void StartCmdService(object state)
-        {
-            this.sr.RegisterCmdService();
-        }
-
-        private void StartDataService(object state)
-        {
-            this.sr.RegisterDataService();
-        }
-
+        
         private void menuItem1_Click(object Sender, EventArgs e)
         {
             this.Close();            
