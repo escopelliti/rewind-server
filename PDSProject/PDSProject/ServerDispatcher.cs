@@ -176,7 +176,7 @@ namespace ConnectionModule
                     break;
                 default:
                     break;
-            }
+            }            
         }
 
         private void OnSetServerFocus(RequestEventArgs ea)
@@ -185,7 +185,7 @@ namespace ConnectionModule
             if (handler != null)
             {
                 handler(this, ea);                
-                server.Send(new byte[16], ea.requestState.client.CmdSocket);
+                server.Send(new byte[1], ea.requestState.client.CmdSocket());
             }
         }
 
@@ -252,7 +252,7 @@ namespace ConnectionModule
         {
             RequestState requestState = (RequestState)param;
             DeleteFileDirContent(ProtocolUtils.TMP_DIR);
-            server.Send(Encoding.Unicode.GetBytes(requestState.token), requestState.client.CmdSocket);
+            server.Send(new byte[1], requestState.client.CmdSocket);
         }
 
         private void ReceiveDataForClipboard(Object source, Object param)
@@ -260,20 +260,20 @@ namespace ConnectionModule
             RequestState requestState = (RequestState)param;
             try
             {
-            string filename = ProtocolUtils.protocolDictionary[requestState.type];
-            using (var stream = new FileStream(ProtocolUtils.TMP_DIR + filename, FileMode.Append))
-            {
-                stream.Write(requestState.data, 0, requestState.data.Length);
-                stream.Close();
-                server.Send(Convert.FromBase64String(requestState.token), requestState.client.CmdSocket);
-            }
-            if (new FileInfo(ProtocolUtils.TMP_DIR + filename).Length >= Convert.ToInt64(requestState.stdRequest.content.ToString())) 
-            {
-                RequestState value = new RequestState();
-                if (!requestDictionary.TryRemove(requestState.token, out value))
-                {//custom exception would be better than this
-                        requestDictionary.Clear();
+                string filename = ProtocolUtils.protocolDictionary[requestState.type];
+                using (var stream = new FileStream(ProtocolUtils.TMP_DIR + filename, FileMode.Append))
+                {
+                    stream.Write(requestState.data, 0, requestState.data.Length);
+                    stream.Close();
+                    server.Send(new byte[1], requestState.client.CmdSocket);
                 }
+                if (new FileInfo(ProtocolUtils.TMP_DIR + filename).Length >= Convert.ToInt64(requestState.stdRequest.content.ToString())) 
+                {                
+                    RequestState value = new RequestState();
+                    if (!requestDictionary.TryRemove(requestState.token, out value))
+                    {//custom exception would be better than this
+                            requestDictionary.Clear();
+                    }                    
                     CreateDataForClipboard(requestState.type, filename);
                 }            
             }
@@ -285,7 +285,7 @@ namespace ConnectionModule
         }
 
         private void CreateDataForClipboard(String requestType, String filename)
-                {
+        {
             switch (requestType)
             {
                 case ProtocolUtils.TRANSFER_IMAGE:
@@ -296,8 +296,8 @@ namespace ConnectionModule
                     break;
                 default:
                     break;
-                }
-            }            
+            }
+        }
 
         private void CreateAudioForClipboard(string fileToPaste)
         {
@@ -307,9 +307,9 @@ namespace ConnectionModule
                 byte[] bytes = File.ReadAllBytes(fileToPaste);
                 stream = new MemoryStream(bytes);
                 File.Delete(fileToPaste);
-        }
+            }
             catch (Exception)
-            {                
+            {
                 //no delete || no paste
                 return;
             }
@@ -323,13 +323,13 @@ namespace ConnectionModule
             byte[] bytes = File.ReadAllBytes(filename);
             try
             {
-            using (var ms = new MemoryStream(bytes))
-            {
-                image = Image.FromStream(ms);
-                ms.Position = 0;
-                ms.Close();
-            }
-            File.Delete(filename);
+                using (var ms = new MemoryStream(bytes))
+                {
+                    image = Image.FromStream(ms);
+                    ms.Position = 0;
+                    ms.Close();
+                }
+                File.Delete(filename);
             }
             catch (Exception)
             {
@@ -356,7 +356,7 @@ namespace ConnectionModule
                 {
                     stream.Write(actualData, 0, actualData.Length);
                     stream.Close();
-                    server.Send(Convert.FromBase64String(request.token), request.client.CmdSocket);
+                    server.Send(new byte[1], request.client.CmdSocket);
                 }
                 if (new FileInfo(ProtocolUtils.TMP_DIR + currentFile.dir + currentFile.name).Length == currentFile.size)
                 {                    
@@ -474,7 +474,7 @@ namespace ConnectionModule
                     }                    
             }
             }
-            server.Send(new byte[16], requestState.client.CmdSocket);
+            server.Send(new byte[1], requestState.client.CmdSocket);
         }
 
         private void CreateClipboardContent(JObject contentJson, string dir) 
