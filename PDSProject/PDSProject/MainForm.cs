@@ -29,9 +29,11 @@ namespace MainApp
         public delegate void SetTextToClipboard(string stringData);
         public delegate void SetFileDropListClipboard(StringCollection fileDropList);
         public delegate void SetImageToClipboard(Image image);
+        public delegate void SetAudioToClipboard(Stream audioStream);
         public static SetTextToClipboard clipboardTextDelegate;
         public static SetFileDropListClipboard clipboardFilesDelegate;
         public static SetImageToClipboard clipboardImageDelegate;
+        public static SetAudioToClipboard clipboardAudioDelegate;
         public static MainForm mainForm;
         private ushort[] portRange;
         private BackgroundWorker bw;
@@ -232,6 +234,24 @@ namespace MainApp
                 clipboardPOCO.contentType = ClipboardPOCO.IMAGE;
                 return clipboardPOCO;
             }
+            if (System.Windows.Clipboard.ContainsAudio())
+            {
+                Stream audioStream = System.Windows.Forms.Clipboard.GetAudioStream();
+                byte[] buffer = new byte[2048];
+                byte[] audioBytes;
+                using (var ms = new MemoryStream())
+                {
+                    int read; 
+                    while ((read = audioStream.Read(buffer, 0, buffer.Length)) > 0)
+                    {
+                        ms.Write(buffer, 0, read);
+                    }
+                    audioBytes = ms.ToArray();
+                    clipboardPOCO.content = audioBytes;
+                }
+                clipboardPOCO.contentType = ClipboardPOCO.AUDIO;
+                return clipboardPOCO;
+            }
             return null;
         }
 
@@ -296,6 +316,19 @@ namespace MainApp
                 //nothing to do
                 return;
             }   
+        }
+
+        private void SetClipboardImage(Stream audioStream)
+        {
+            try
+            {
+                System.Windows.Forms.Clipboard.SetAudio(audioStream);
+            }
+            catch (Exception)
+            {
+                //nothing to do
+                return;
+            }
         }
 
         private void SetClipboardFileDropList(StringCollection fileDropList)

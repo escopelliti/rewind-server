@@ -17,12 +17,16 @@ namespace Protocol
         public const string SET_CLIPBOARD_TEXT = "CLIPBOARD_TEXT";
         public const string SET_CLIPBOARD_FILES = "CLIPBOARD_FILES";
         public const string SET_CLIPBOARD_IMAGE = "CLIPBOARD_IMAGE";
+        public const string SET_CLIPBOARD_AUDIO = "CLIPBOARD_AUDIO";
         public const string TRANSFER_FILES = "BEGIN_TRANSFER_FILES";
         public const string TRANSFER_IMAGE = "BEGIN_TRANSFER_IMAGE";
+        public const string TRANSFER_AUDIO = "BEGIN_TRANSFER_AUDIO";
         public const string GET_CLIPBOARD_DIMENSION = "GET_CLIPBOARD_DIMENSION";
         public const string GET_CLIPBOARD_CONTENT = "GET_CLIPBOARD_CONTENT";
         public const string GET_CLIPBOARD_FILES = "GET_CLIPBOARD_FILES";
         public const string GET_CLIPBOARD_IMG = "GET_CLIPBOARD_IMG";
+        public const string GET_CLIPBOARD_AUDIO = "GET_CLIPBOARD_AUDIO";
+        public const string GET_CLIPBOARD_DATA = "GET_CLIPBOARD_DATA";
         public const string SET_RESET_FOCUS = "SET_RESET_FOCUS";
         public const string FOCUS_ON = "FOCUS_ON";
         public const string FOCUS_OFF = "FOCUS_OFF";
@@ -30,6 +34,7 @@ namespace Protocol
         public const string REMOTE_PASTE = "REMOTE_PASTE";
 
         public const string TMP_IMAGE_FILE = ".\\tmp.jpg";
+        public const string TMP_AUDIO_FILE = ".\\tmp.wav";
         public const string TMP_DIR = ".\\tmp\\";
 
         public const ushort DEFAULT_DATA_PORT = 12001;
@@ -51,7 +56,9 @@ namespace Protocol
             protocolDictionary[SET_CLIPBOARD_TEXT] = SET_CLIPBOARD_TEXT;
             protocolDictionary[SET_CLIPBOARD_FILES] = TRANSFER_FILES;
             protocolDictionary[SET_CLIPBOARD_IMAGE] = TRANSFER_IMAGE;
+            protocolDictionary[SET_CLIPBOARD_AUDIO] = TRANSFER_AUDIO;
             protocolDictionary[TRANSFER_IMAGE] = TMP_IMAGE_FILE;
+            protocolDictionary[TRANSFER_AUDIO] = TMP_AUDIO_FILE;
 
             protocolDictionary[GET_CLIPBOARD_DIMENSION] = GET_CLIPBOARD_DIMENSION;
             protocolDictionary[GET_CLIPBOARD_CONTENT] = GET_CLIPBOARD_CONTENT;

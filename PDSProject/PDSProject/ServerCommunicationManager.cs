@@ -18,11 +18,11 @@ namespace ConnectionModule.CommunicationLibrary
                 socket.Listen(100);
                 return socket;
             }
-            catch (SocketException ex)
+            catch (SocketException)
             {
                 return null;
             }
-            catch (Exception e)
+            catch (Exception)
             {                
                 return null;
             }
