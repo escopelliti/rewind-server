@@ -78,7 +78,7 @@ namespace Clipboard
             }
             byte[] byteToSend = BitConverter.GetBytes(currentClipboardDimension);
             currentClipboardDimension = 0;
-            ServerDispatcher.server.Send(byteToSend, requestState.client.GetSocket());
+            ServerDispatcher.server.Send(byteToSend, requestState.client.CmdSocket);
         }
 
         private long GetDirectorySize(string p)
@@ -116,12 +116,12 @@ namespace Clipboard
             }
             if (byteToSend == null)
             {
-                ServerDispatcher.server.Shutdown(requestState.client.GetSocket(), System.Net.Sockets.SocketShutdown.Both);
-                ServerDispatcher.server.Close(requestState.client.GetSocket());
+                ServerDispatcher.server.Shutdown(requestState.client.CmdSocket, System.Net.Sockets.SocketShutdown.Both);
+                ServerDispatcher.server.Close(requestState.client.CmdSocket);
                 ResetClassValue();
                 return;
             }
-            ServerDispatcher.server.Send(byteToSend, requestState.client.GetSocket());
+            ServerDispatcher.server.Send(byteToSend, requestState.client.CmdSocket);
             ResetClassValue();
         }
 
@@ -145,13 +145,13 @@ namespace Clipboard
                 catch (Exception)
                 {
                     //problem during bytes copy
-                    ServerDispatcher.server.Shutdown(rs.client.GetSocket(), System.Net.Sockets.SocketShutdown.Both);
-                    ServerDispatcher.server.Close(rs.client.GetSocket());
+                    ServerDispatcher.server.Shutdown(rs.client.CmdSocket, System.Net.Sockets.SocketShutdown.Both);
+                    ServerDispatcher.server.Close(rs.client.CmdSocket);
                     return;
                 }
                     
                 offset1 += chunkLength;
-                ServerDispatcher.server.Send(chunk, rs.client.GetSocket());
+                ServerDispatcher.server.Send(chunk, rs.client.CmdSocket);
                 return;
             }
             offset1-= chunkLength;
@@ -165,12 +165,12 @@ namespace Clipboard
                 }
                 catch (Exception ex)
                 {
-                    ServerDispatcher.server.Shutdown(rs.client.GetSocket(), System.Net.Sockets.SocketShutdown.Both);
-                    ServerDispatcher.server.Close(rs.client.GetSocket());
+                    ServerDispatcher.server.Shutdown(rs.client.CmdSocket, System.Net.Sockets.SocketShutdown.Both);
+                    ServerDispatcher.server.Close(rs.client.CmdSocket);
                     //problems during bytes copy
                     return;
-                }                   
-                ServerDispatcher.server.Send(chunk, rs.client.GetSocket());
+                }
+                ServerDispatcher.server.Send(chunk, rs.client.CmdSocket);
             }
         }
 
@@ -220,7 +220,7 @@ namespace Clipboard
             RequestState rs = (RequestState) rea.requestState;
             if (currentFileNum == this.filesToSend.Count)
             {
-                ServerDispatcher.server.Send(new byte[16], rs.client.GetSocket());
+                ServerDispatcher.server.Send(new byte[16], rs.client.CmdSocket);
                 return;
             }
             String file = this.filesToSend[currentFileNum];
@@ -246,7 +246,7 @@ namespace Clipboard
                             {
                                 byte[] bytesFileToSend = new byte[bytesReadNum];
                                 System.Buffer.BlockCopy(bytesFile, 0, bytesFileToSend, 0, bytesReadNum);
-                                ServerDispatcher.server.Send(bytesFileToSend, rs.client.GetSocket());
+                                ServerDispatcher.server.Send(bytesFileToSend, rs.client.CmdSocket);
                                 offset += bytesReadNum;
 
                                 if (offset >= new FileInfo(file).Length)
@@ -260,8 +260,8 @@ namespace Clipboard
                     }
                     catch (Exception)
                     {
-                        ServerDispatcher.server.Shutdown(rs.client.GetSocket(), System.Net.Sockets.SocketShutdown.Both);
-                        ServerDispatcher.server.Close(rs.client.GetSocket());
+                        ServerDispatcher.server.Shutdown(rs.client.CmdSocket, System.Net.Sockets.SocketShutdown.Both);
+                        ServerDispatcher.server.Close(rs.client.CmdSocket);
                     }                                      
             }
         }

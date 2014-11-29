@@ -5,14 +5,8 @@ namespace ConnectionModule
 {
     public class Client
     {
-        private Socket socket;        
-        public Socket GetSocket()
-        {
-            return socket;
-        }
-        public void SetSocket(Socket socket)
-        {
-            this.socket = socket;
-        }
+        public Socket CmdSocket{ get;set; }
+        public Socket DataSocket { get; set; }
+
     }
 }

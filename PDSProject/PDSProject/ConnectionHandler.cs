@@ -6,6 +6,7 @@ using MainApp;
 using System.Windows;
 using ConnectionModule.CommunicationLibrary;
 using GenericDataStructure;
+using System.Collections.Generic;
 
 namespace ConnectionModule
 {
@@ -18,7 +19,8 @@ namespace ConnectionModule
         public ushort DataPort { get; set; }
         public ushort CmdPort { get; set; }
         private MainForm mainForm;
-                 
+        public List<Client> clients;
+         
         private const String HOUSTON_PROBLEM = "Sembra esserci qualche problema, prova a riavviare l'applicazione";
  
         public ConnectionHandler(MainForm mainForm, Configuration.Configuration conf)
@@ -27,6 +29,7 @@ namespace ConnectionModule
             ServerChannel = new Channel();
             this.server = new ServerCommunicationManager();
             dispatcher = new ServerDispatcher(server, mainForm, conf);
+            clients = new List<Client>();
 
             Socket cmdSocket = InitSocket();
             if (cmdSocket == null)
@@ -115,13 +118,13 @@ namespace ConnectionModule
         {
             while (!closed)
             {                
-                Client newClient = new Client();
                 Socket clientSocket = Accept(serverDataSocket);
+                string ipAddressOnDataSocket = ((IPEndPoint)clientSocket.RemoteEndPoint).Address.ToString();
+                Client newClient = clients.Find( x => (((IPEndPoint)x.DataSocket.RemoteEndPoint).Address.ToString()).Equals(ipAddressOnDataSocket));
 
                 if (!(clientSocket == null))
                 {
-                    newClient.SetSocket(clientSocket);
-
+                    newClient.DataSocket = clientSocket;
                     try
                     {
                         dispatcher.StartListeningToData(newClient);
@@ -142,11 +145,105 @@ namespace ConnectionModule
             {
                 Client newClient = new Client();
                 Socket clientSocket = Accept(serverSocket);
+
+                Thread checkThread = new Thread(() => IsDstReacheable(newClient));
+                checkThread.Start();
+
                 if (!(clientSocket == null))
                 {
-                    newClient.SetSocket(clientSocket);
+                    newClient.CmdSocket = clientSocket;
                     dispatcher.StartListeningTo(newClient);
+                    clients.Add(newClient);
                 }
+            }
+        }
+
+        private void IsDstReacheable(Client client)
+        {
+            Socket s = client.CmdSocket;
+            int timeToWait = 10;
+            bool channelIsOpened = true;
+
+            Socket checkSocket = server.CreateSocket(ProtocolType.Tcp);
+            if (checkSocket == null) 
+            {
+                //destination unreacheable
+                channelIsOpened = false;
+                CloseSocket(client.CmdSocket);
+                if (client.DataSocket != null)
+                {
+                    CloseSocket(client.DataSocket);
+                }
+            }
+            else
+            {
+                IPEndPoint remoteEP = new IPEndPoint(IPAddress.Parse(((IPEndPoint)s.RemoteEndPoint).Address.ToString()), 40000);
+                try
+                {
+                    checkSocket.Connect(remoteEP);
+                }
+                catch (Exception)
+                {
+                    //destination unreacheable
+                    channelIsOpened = false;
+                    CloseSocket(client.CmdSocket);
+                    if (client.DataSocket != null)
+                    {
+                        CloseSocket(client.DataSocket);
+                    } 
+                }
+
+                while (channelIsOpened)
+                {
+                    int byteRead = 0;
+                    try
+                    {
+                        byte[] BytesTosend = new byte[1];
+                        checkSocket.Send(BitConverter.GetBytes(timeToWait));
+                        checkSocket.ReceiveTimeout = timeToWait*1000;
+                        byteRead = checkSocket.Receive(new byte[1]);
+                    }
+                    catch (Exception)
+                    {
+                        //destination unreacheable
+                        CloseSocket(client.CmdSocket);
+                        CloseSocket(client.DataSocket);
+                        CloseSocket(checkSocket);
+                        break;
+                    }
+
+                    if (byteRead > 0)
+                    {
+                        //destination reacheable
+                        if (timeToWait <= 256)
+                        {
+                            timeToWait += 10;
+                        }
+                    }
+                    else
+                    {
+                        //destination unreacheable
+                        channelIsOpened = false;
+                        CloseSocket(client.CmdSocket);
+                        CloseSocket(client.DataSocket);
+                        CloseSocket(checkSocket);
+                        break;
+                    }
+                    Thread.Sleep(timeToWait*1000);
+                }
+            }
+        }
+
+        private void CloseSocket(Socket s)
+        {
+            try
+            {
+                server.Shutdown(s, SocketShutdown.Both);
+                server.Close(s);
+            }
+            catch (Exception)
+            {
+                return;
             }
         }
 

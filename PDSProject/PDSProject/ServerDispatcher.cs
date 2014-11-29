@@ -146,12 +146,12 @@ namespace ConnectionModule
             }
             catch (JsonException)
             {
-                server.Shutdown(rs.client.GetSocket(), SocketShutdown.Both);
-                server.Close(rs.client.GetSocket());
+                server.Shutdown(rs.client.CmdSocket, SocketShutdown.Both);
+                server.Close(rs.client.CmdSocket);
                 return;
             }
-            
-            server.Send(Encoding.Unicode.GetBytes(toSend), rs.client.GetSocket());
+
+            server.Send(Encoding.Unicode.GetBytes(toSend), rs.client.CmdSocket);
         }
 
         private void ApplyRemotePaste(object sender, RequestEventArgs param)
@@ -180,8 +180,8 @@ namespace ConnectionModule
             SetActiveServerEventHandler handler = this.setActiveServerHandler;
             if (handler != null)
             {
-                handler(this, ea);                
-                server.Send(new byte[16], ea.requestState.client.GetSocket());
+                handler(this, ea);
+                server.Send(new byte[16], ea.requestState.client.CmdSocket);
             }
         }
 
@@ -248,7 +248,7 @@ namespace ConnectionModule
         {
             RequestState requestState = (RequestState)param;
             DeleteFileDirContent(ProtocolUtils.TMP_DIR);
-            server.Send(Encoding.Unicode.GetBytes(requestState.token), requestState.client.GetSocket());
+            server.Send(Encoding.Unicode.GetBytes(requestState.token), requestState.client.CmdSocket);
         }
 
         private void ReceiveDataForClipboard(Object source, Object param)
@@ -261,7 +261,7 @@ namespace ConnectionModule
             {
                 stream.Write(requestState.data, 0, requestState.data.Length);
                 stream.Close();
-                server.Send(Convert.FromBase64String(requestState.token), requestState.client.GetSocket());
+                server.Send(Convert.FromBase64String(requestState.token), requestState.client.CmdSocket);
             }
             if (new FileInfo(ProtocolUtils.TMP_DIR + filename).Length >= Convert.ToInt64(requestState.stdRequest.content.ToString())) 
             {
@@ -281,8 +281,8 @@ namespace ConnectionModule
         }
             catch (Exception)
             {
-                server.Shutdown(requestState.client.GetSocket(), SocketShutdown.Both);
-                server.Close(requestState.client.GetSocket());
+                server.Shutdown(requestState.client.CmdSocket, SocketShutdown.Both);
+                server.Close(requestState.client.CmdSocket);
             }
         }
 
@@ -325,7 +325,7 @@ namespace ConnectionModule
                 {
                     stream.Write(actualData, 0, actualData.Length);
                     stream.Close();
-                    server.Send(Convert.FromBase64String(request.token), request.client.GetSocket());
+                    server.Send(Convert.FromBase64String(request.token), request.client.CmdSocket);
                 }
                 if (new FileInfo(ProtocolUtils.TMP_DIR + currentFile.dir + currentFile.name).Length == currentFile.size)
                 {                    
@@ -345,8 +345,8 @@ namespace ConnectionModule
                 }
             catch (Exception)
             {
-                server.Shutdown(request.client.GetSocket(), SocketShutdown.Both);
-                server.Close(request.client.GetSocket());
+                server.Shutdown(request.client.CmdSocket, SocketShutdown.Both);
+                server.Close(request.client.CmdSocket);
             }
         }
 
@@ -393,20 +393,20 @@ namespace ConnectionModule
             }
             catch (JsonException)
             {
-                server.Shutdown(requestState.client.GetSocket(), SocketShutdown.Both);
-                server.Close(requestState.client.GetSocket());
+                server.Shutdown(requestState.client.CmdSocket, SocketShutdown.Both);
+                server.Close(requestState.client.CmdSocket);
                 return;
             }
             catch (NullReferenceException)
             {
-                server.Shutdown(requestState.client.GetSocket(), SocketShutdown.Both);
-                server.Close(requestState.client.GetSocket());
+                server.Shutdown(requestState.client.CmdSocket, SocketShutdown.Both);
+                server.Close(requestState.client.CmdSocket);
                 return;
             }
             catch (Exception)
             {
-                server.Shutdown(requestState.client.GetSocket(), SocketShutdown.Both);
-                server.Close(requestState.client.GetSocket());
+                server.Shutdown(requestState.client.CmdSocket, SocketShutdown.Both);
+                server.Close(requestState.client.CmdSocket);
                 return;
             }
             foreach (ProtocolUtils.FileStruct fileStruct in files)
@@ -425,25 +425,25 @@ namespace ConnectionModule
                 }
                     catch (JsonException)
                     {
-                        server.Shutdown(requestState.client.GetSocket(), SocketShutdown.Both);
-                        server.Close(requestState.client.GetSocket());
+                        server.Shutdown(requestState.client.CmdSocket, SocketShutdown.Both);
+                        server.Close(requestState.client.CmdSocket);
                         return;
                     }
                     catch (NullReferenceException)
                     {
-                        server.Shutdown(requestState.client.GetSocket(), SocketShutdown.Both);
-                        server.Close(requestState.client.GetSocket());
+                        server.Shutdown(requestState.client.CmdSocket, SocketShutdown.Both);
+                        server.Close(requestState.client.CmdSocket);
                         return;
                     }
                     catch (Exception)
                     {
-                        server.Shutdown(requestState.client.GetSocket(), SocketShutdown.Both);
-                        server.Close(requestState.client.GetSocket());
+                        server.Shutdown(requestState.client.CmdSocket, SocketShutdown.Both);
+                        server.Close(requestState.client.CmdSocket);
                         return;
                     }                    
             }
             }
-            server.Send(new byte[16], requestState.client.GetSocket());
+            server.Send(new byte[16], requestState.client.CmdSocket);
         }
 
         private void CreateClipboardContent(JObject contentJson, string dir) 
@@ -471,7 +471,7 @@ namespace ConnectionModule
             {//custom exception would be better than this
                 requestDictionary.Clear();
             }
-            server.Send(new byte[16], ((RequestState)param).client.GetSocket());
+            server.Send(new byte[16], ((RequestState)param).client.CmdSocket);
         }
 
         public void StartListeningTo(Client client)
@@ -481,11 +481,11 @@ namespace ConnectionModule
 
         public void StartListeningToData(Client client)
         {
-            Socket socket = client.GetSocket();
+            Socket socket = client.DataSocket;
             while (!closed)
             {
                 byte[] data = new byte[1024];
-                int bytesReadNum = server.Receive(data, client.GetSocket());
+                int bytesReadNum = server.Receive(data, client.DataSocket);
                 if (bytesReadNum > 0)
                 {                    
                     ThreadPool.QueueUserWorkItem(new WaitCallback(HandleInput), new List<Object>() { bytesReadNum, data, client });
@@ -515,7 +515,7 @@ namespace ConnectionModule
             List<Object> objList = (List<Object>) obj;
             int bytesReadNum = (int)objList[0];
             byte[] data = (byte[])objList[1];
-            Socket socket = ((Client) objList[2]).GetSocket();
+            Socket socket = ((Client) objList[2]).DataSocket;
             if (bytesReadNum > 0)
             {
                 byte[] actualData = new byte[bytesReadNum];
@@ -541,7 +541,7 @@ namespace ConnectionModule
             {
                 //qui leggi le richieste e distribuisci ad un thread la richiesta
                 byte[] data = new byte[64*1024];                
-                int bytesReadNum = server.Receive(data, client.GetSocket());
+                int bytesReadNum = server.Receive(data, client.CmdSocket);
                 if (bytesReadNum > 0)
                 {
                     byte[] actualData = new byte[bytesReadNum];
@@ -567,8 +567,8 @@ namespace ConnectionModule
                     break;
                 }                   
             }
-            server.Shutdown(client.GetSocket(), SocketShutdown.Both);
-            server.Close(client.GetSocket());
+            server.Shutdown(client.CmdSocket, SocketShutdown.Both);
+            server.Close(client.CmdSocket);
             ResetKModifier();
         }
  
