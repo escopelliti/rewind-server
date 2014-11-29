@@ -171,6 +171,9 @@ namespace ConnectionModule
                 case ProtocolUtils.TRANSFER_IMAGE:
                     MainForm.mainForm.Invoke(MainForm.clipboardImageDelegate, clipboardMgr.ImgToPaste);
                     break;
+                case ProtocolUtils.TRANSFER_AUDIO:
+                    MainForm.mainForm.Invoke(MainForm.clipboardAudioDelegate, clipboardMgr.AudioToPaste);
+                    break;
                 default:
                     break;
             }            
