@@ -228,7 +228,7 @@ namespace Clipboard
             RequestState rs = (RequestState) rea.requestState;
             if (currentFileNum == this.filesToSend.Count)
             {
-                ServerDispatcher.server.Send(new byte[16], rs.client.GetSocket());
+                ServerDispatcher.server.Send(new byte[1], rs.client.GetSocket());
                 return;
             }
             String file = this.filesToSend[currentFileNum];
@@ -237,7 +237,7 @@ namespace Clipboard
             long dim = 0;
             if (File.Exists(file))
                 {
-                    byte[] bytesFile = new byte[1024];
+                    byte[] bytesFile = new byte[4096];
                     try
                     {
                         using (var input = File.OpenRead(file))
