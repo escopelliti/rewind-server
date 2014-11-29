@@ -185,7 +185,7 @@ namespace ConnectionModule
             if (handler != null)
             {
                 handler(this, ea);                
-                server.Send(new byte[16], ea.requestState.client.GetSocket());
+                server.Send(new byte[1], ea.requestState.client.GetSocket());
             }
         }
 
@@ -252,7 +252,7 @@ namespace ConnectionModule
         {
             RequestState requestState = (RequestState)param;
             DeleteFileDirContent(ProtocolUtils.TMP_DIR);
-            server.Send(Encoding.Unicode.GetBytes(requestState.token), requestState.client.GetSocket());
+            server.Send(new byte[1], requestState.client.GetSocket());
         }
 
         private void ReceiveDataForClipboard(Object source, Object param)
@@ -265,7 +265,7 @@ namespace ConnectionModule
                 {
                     stream.Write(requestState.data, 0, requestState.data.Length);
                     stream.Close();
-                    server.Send(Convert.FromBase64String(requestState.token), requestState.client.GetSocket());
+                    server.Send(new byte[1], requestState.client.GetSocket());
                 }
                 if (new FileInfo(ProtocolUtils.TMP_DIR + filename).Length >= Convert.ToInt64(requestState.stdRequest.content.ToString())) 
                 {                
@@ -356,7 +356,7 @@ namespace ConnectionModule
                 {
                     stream.Write(actualData, 0, actualData.Length);
                     stream.Close();
-                    server.Send(Convert.FromBase64String(request.token), request.client.GetSocket());
+                    server.Send(new byte[1], request.client.GetSocket());
                 }
                 if (new FileInfo(ProtocolUtils.TMP_DIR + currentFile.dir + currentFile.name).Length == currentFile.size)
                 {                    
