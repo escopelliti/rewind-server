@@ -328,7 +328,7 @@ namespace ConnectionModule
                     server.Send(Convert.FromBase64String(request.token), request.client.GetSocket());
                 }
                 if (new FileInfo(ProtocolUtils.TMP_DIR + currentFile.dir + currentFile.name).Length == currentFile.size)
-                {
+                {                    
                     currentFileNum++;
                     if (currentFileNum == filesToReceive.Count)
                     {
@@ -338,9 +338,6 @@ namespace ConnectionModule
                                 requestDictionary.Clear();
                         }
                         clipboardMgr.CurrentContentToPaste = ProtocolUtils.TRANSFER_FILES;                        
-                        currentFileNum = 0;
-                        filesToReceive.Clear();
-                        fileDropList.Clear();
                     }
                     }
                 }
@@ -380,6 +377,9 @@ namespace ConnectionModule
             String fullTmpPath = Path.GetFullPath(ProtocolUtils.TMP_DIR);
             //leggere il JSON e preparare il lavoro per i file e le cartelle che arrivano
             DeleteFileDirContent(ProtocolUtils.TMP_DIR);
+            currentFileNum = 0;
+            filesToReceive.Clear();
+            fileDropList.Clear();
             RequestState requestState = (RequestState) param;
 
             JObject contentJson = (JObject)requestState.stdRequest.content;
