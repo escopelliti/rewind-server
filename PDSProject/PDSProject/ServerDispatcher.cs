@@ -474,7 +474,7 @@ namespace ConnectionModule
                     }                    
             }
             }
-            server.Send(new byte[16], requestState.client.GetSocket());
+            server.Send(new byte[1], requestState.client.GetSocket());
         }
 
         private void CreateClipboardContent(JObject contentJson, string dir) 
