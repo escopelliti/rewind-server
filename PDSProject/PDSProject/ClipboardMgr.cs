@@ -19,12 +19,12 @@ namespace Clipboard
         private ClipboardPOCO clipboardContent;
         private long currentClipboardDimension;
         private List<String> filesToSend;
-        private byte[] imageBytes;
+        private byte[] dataBytes;
 
         public String CurrentContentToPaste { get; set; }        
         public String TextToPaste { get; set; }
         public System.Drawing.Image ImgToPaste { get; set; }
-
+        public Stream AudioToPaste { get; set; }
 
         public ClipboardMgr()
         {
@@ -68,6 +68,10 @@ namespace Clipboard
                         byte[] img = (byte[])clipboardContent.content;
                         currentClipboardDimension = img.Length;
                         break;
+                    case ClipboardPOCO.AUDIO:
+                        byte[] audio = (byte[])clipboardContent.content;
+                        currentClipboardDimension = audio.Length;
+                        break;
                     default:
                         return;                        
                 }
@@ -107,8 +111,12 @@ namespace Clipboard
                     byteToSend = TextStandardRequestToSend();                    
                     break;
                 case ClipboardPOCO.IMAGE:
-                    imageBytes = (byte[])clipboardContent.content;
-                    byteToSend = ImgStandardRequestToSend();
+                    dataBytes = (byte[])clipboardContent.content;
+                    byteToSend = DataStandardRequestToSend(ProtocolUtils.SET_CLIPBOARD_IMAGE);
+                    break;
+                case ClipboardPOCO.AUDIO:
+                    dataBytes = (byte[])clipboardContent.content;
+                    byteToSend = DataStandardRequestToSend(ProtocolUtils.SET_CLIPBOARD_AUDIO);
                     break;
                 default:
                     ResetClassValue();
@@ -125,22 +133,22 @@ namespace Clipboard
             ResetClassValue();
         }
 
-        public void OnImageToTransfer(Object sender, Object ea)
+        public void OnDataToTransfer(Object sender, Object ea)
         {
             RequestEventArgs rea = (RequestEventArgs)ea;
             RequestState rs = (RequestState)rea.requestState;
             ushort chunkLength = 1024;                                               
-            if (offset1 < imageBytes.Length)
+            if (offset1 < dataBytes.Length)
             {
                 int dim = 1024;
-                if ((imageBytes.Length - offset1) < dim)
+                if ((dataBytes.Length - offset1) < dim)
                 {
-                    dim = (imageBytes.Length - (int)offset1);
+                    dim = (dataBytes.Length - (int)offset1);
                 }
                 byte[] chunk = new byte[dim];
                 try
                 {
-                    System.Buffer.BlockCopy(imageBytes, (int)offset1, chunk, 0, dim);
+                    System.Buffer.BlockCopy(dataBytes, (int)offset1, chunk, 0, dim);
                 }
                 catch (Exception)
                 {
@@ -155,15 +163,15 @@ namespace Clipboard
                 return;
             }
             offset1-= chunkLength;
-            int lastBytes = (imageBytes.Length - (int) offset1); 
+            int lastBytes = (dataBytes.Length - (int) offset1); 
             if (lastBytes > 0)
             {
                 byte[] chunk = new byte[lastBytes];
                 try
                 {
-                    System.Buffer.BlockCopy(imageBytes, (int)offset1, chunk, 0, lastBytes);                     
+                    System.Buffer.BlockCopy(dataBytes, (int)offset1, chunk, 0, lastBytes);                     
                 }
-                catch (Exception ex)
+                catch (Exception)
                 {
                     ServerDispatcher.server.Shutdown(rs.client.CmdSocket, System.Net.Sockets.SocketShutdown.Both);
                     ServerDispatcher.server.Close(rs.client.CmdSocket);
@@ -266,11 +274,11 @@ namespace Clipboard
             }
         }
 
-        private byte[] ImgStandardRequestToSend()
+        private byte[] DataStandardRequestToSend(String requestType)
         {
             StandardRequest sr = new StandardRequest();
-            sr.type = ProtocolUtils.SET_CLIPBOARD_IMAGE;
-            sr.content = imageBytes.Length.ToString();
+            sr.type = requestType;
+            sr.content = dataBytes.Length.ToString();
             String toSend = JSON.JSONFactory.CreateJSONStandardRequest(sr);
             if (toSend == null)
             {

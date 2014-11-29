@@ -37,7 +37,7 @@ namespace ConnectionModule
         public event ReceivingFilesEventHandler receivingFiles;
 
         public delegate void ChangeClipboardImageEventHandler(Object sender, Object param);
-        public event ChangeClipboardImageEventHandler clipboardImageHandler;
+        public event ChangeClipboardImageEventHandler clipboardDataHandler;
 
         public delegate void SetupClipboardDataTransfer(Object sender, Object param);
         public event SetupClipboardDataTransfer setupClipboardDataTransfer;
@@ -58,8 +58,8 @@ namespace ConnectionModule
         public delegate void FileToTransferEventHandler(Object sender, Object param);
         public event FileToTransferEventHandler fileTotransferHandler;
 
-        public delegate void ImgToTransferEventHandler(Object sender, Object param);
-        public event ImgToTransferEventHandler imgTotransferHandler;
+        public delegate void DataToTransferEventHandler(Object sender, Object param);
+        public event DataToTransferEventHandler dataTotransferHandler;
 
         public delegate void SetActiveServerEventHandler(Object sender, Object param);
         public event SetActiveServerEventHandler setActiveServerHandler;
@@ -100,9 +100,11 @@ namespace ConnectionModule
 
             setupClipboardDataTransfer += SendAckToClient;
             dispatch[ProtocolUtils.SET_CLIPBOARD_IMAGE] = new Action<Object>(obj => setupClipboardDataTransfer(this, obj));
+            dispatch[ProtocolUtils.SET_CLIPBOARD_AUDIO] = new Action<Object>(obj => setupClipboardDataTransfer(this, obj));
 
-            clipboardImageHandler += ReceiveDataForClipboard;
-            dispatch[ProtocolUtils.TRANSFER_IMAGE] = new Action<Object>(obj => clipboardImageHandler(this, obj));
+            clipboardDataHandler += ReceiveDataForClipboard;
+            dispatch[ProtocolUtils.TRANSFER_IMAGE] = new Action<Object>(obj => clipboardDataHandler(this, obj));
+            dispatch[ProtocolUtils.TRANSFER_AUDIO] = new Action<Object>(obj => clipboardDataHandler(this, obj));
 
             getClipboardDimensionHandler += clipboardMgr.OnGetDimensionRequest;
             dispatch[ProtocolUtils.GET_CLIPBOARD_DIMENSION] = new Action<Object>(obj => OnGetClipboardDimension(new RequestEventArgs((RequestState) obj)));
@@ -113,8 +115,8 @@ namespace ConnectionModule
             fileTotransferHandler += clipboardMgr.OnFileToTransferEvent;
             dispatch[ProtocolUtils.GET_CLIPBOARD_FILES] = new Action<Object>(obj => OnFileToTransfer(new RequestEventArgs((RequestState) obj)));
 
-            imgTotransferHandler += clipboardMgr.OnImageToTransfer;
-            dispatch[ProtocolUtils.GET_CLIPBOARD_IMG] = new Action<Object>(obj => OnImgToTransfer(new RequestEventArgs((RequestState)obj)));
+            dataTotransferHandler += clipboardMgr.OnDataToTransfer;
+            dispatch[ProtocolUtils.GET_CLIPBOARD_DATA] = new Action<Object>(obj => OnDataToTransfer(new RequestEventArgs((RequestState)obj)));
 
             setActiveServerHandler += mainForm.OnSetServerFocus;
             dispatch[ProtocolUtils.SET_RESET_FOCUS] = new Action<Object>(obj => OnSetServerFocus(new RequestEventArgs((RequestState)obj)));
@@ -150,7 +152,7 @@ namespace ConnectionModule
                 server.Close(rs.client.CmdSocket);
                 return;
             }
-
+            
             server.Send(Encoding.Unicode.GetBytes(toSend), rs.client.CmdSocket);
         }
 
@@ -169,10 +171,12 @@ namespace ConnectionModule
                 case ProtocolUtils.TRANSFER_IMAGE:
                     MainForm.mainForm.Invoke(MainForm.clipboardImageDelegate, clipboardMgr.ImgToPaste);
                     break;
+                case ProtocolUtils.TRANSFER_AUDIO:
+                    MainForm.mainForm.Invoke(MainForm.clipboardAudioDelegate, clipboardMgr.AudioToPaste);
+                    break;
                 default:
                     break;
             }
-            clipboardMgr.CurrentContentToPaste = "NONE";
         }
 
         private void OnSetServerFocus(RequestEventArgs ea)
@@ -180,7 +184,7 @@ namespace ConnectionModule
             SetActiveServerEventHandler handler = this.setActiveServerHandler;
             if (handler != null)
             {
-                handler(this, ea);
+                handler(this, ea);                
                 server.Send(new byte[16], ea.requestState.client.CmdSocket);
             }
         }
@@ -203,9 +207,9 @@ namespace ConnectionModule
             }
         }
 
-        private void OnImgToTransfer(RequestEventArgs ea)
+        private void OnDataToTransfer(RequestEventArgs ea)
         {
-            ImgToTransferEventHandler handler = this.imgTotransferHandler;
+            DataToTransferEventHandler handler = this.dataTotransferHandler;
             if (handler != null)
             {
                 handler(this, ea);
@@ -265,25 +269,52 @@ namespace ConnectionModule
             }
             if (new FileInfo(ProtocolUtils.TMP_DIR + filename).Length >= Convert.ToInt64(requestState.stdRequest.content.ToString())) 
             {
-                
                 RequestState value = new RequestState();
                 if (!requestDictionary.TryRemove(requestState.token, out value))
                 {//custom exception would be better than this
                         requestDictionary.Clear();
                 }
-
-                //TODO : AVOID CONDITIONAL TEST
-                if (requestState.type == ProtocolUtils.TRANSFER_IMAGE)
-                {
-                    CreateImageForClipboard(ProtocolUtils.TMP_DIR + filename);
-                }
-            }            
-        }
+                    CreateDataForClipboard(requestState.type, filename);
+                }            
+            }
             catch (Exception)
             {
                 server.Shutdown(requestState.client.CmdSocket, SocketShutdown.Both);
-                server.Close(requestState.client.CmdSocket);
+                server.Close(requestState.client.CmdSocket);             
             }
+        }
+
+        private void CreateDataForClipboard(String requestType, String filename)
+                {
+            switch (requestType)
+            {
+                case ProtocolUtils.TRANSFER_IMAGE:
+                    CreateImageForClipboard(ProtocolUtils.TMP_DIR + filename);
+                    break;
+                case ProtocolUtils.TRANSFER_AUDIO:
+                    CreateAudioForClipboard(ProtocolUtils.TMP_DIR + filename);
+                    break;
+                default:
+                    break;
+                }
+            }            
+
+        private void CreateAudioForClipboard(string fileToPaste)
+        {
+            Stream stream;
+            try
+            {
+                byte[] bytes = File.ReadAllBytes(fileToPaste);
+                stream = new MemoryStream(bytes);
+                File.Delete(fileToPaste);
+        }
+            catch (Exception)
+            {                
+                //no delete || no paste
+                return;
+            }
+            clipboardMgr.AudioToPaste = stream;
+            clipboardMgr.CurrentContentToPaste = ProtocolUtils.TRANSFER_AUDIO; 
         }
 
         private void CreateImageForClipboard(string filename)
