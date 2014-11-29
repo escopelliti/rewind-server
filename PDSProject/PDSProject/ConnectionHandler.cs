@@ -120,14 +120,15 @@ namespace ConnectionModule
             {                
                 Socket clientSocket = Accept(serverDataSocket);
                 string ipAddressOnDataSocket = ((IPEndPoint)clientSocket.RemoteEndPoint).Address.ToString();
-                Client newClient = clients.Find( x => (((IPEndPoint)x.DataSocket.RemoteEndPoint).Address.ToString()).Equals(ipAddressOnDataSocket));
-
+                Client newClient = clients.Find( x => (((IPEndPoint)x.CmdSocket.RemoteEndPoint).Address.ToString()).Equals(ipAddressOnDataSocket));
                 if (!(clientSocket == null))
                 {
                     newClient.DataSocket = clientSocket;
                     try
                     {
-                        dispatcher.StartListeningToData(newClient);
+                        Thread checkThread = new Thread(() => IsDstReacheable(newClient));
+                        checkThread.Start();
+                        dispatcher.StartListeningToData(newClient);                       
                     }
                     catch (Exception)
                     {
@@ -144,11 +145,7 @@ namespace ConnectionModule
             while (true)
             {
                 Client newClient = new Client();
-                Socket clientSocket = Accept(serverSocket);
-
-                Thread checkThread = new Thread(() => IsDstReacheable(newClient));
-                checkThread.Start();
-
+                Socket clientSocket = Accept(serverSocket);                
                 if (!(clientSocket == null))
                 {
                     newClient.CmdSocket = clientSocket;
@@ -169,11 +166,7 @@ namespace ConnectionModule
             {
                 //destination unreacheable
                 channelIsOpened = false;
-                CloseSocket(client.CmdSocket);
-                if (client.DataSocket != null)
-                {
-                    CloseSocket(client.DataSocket);
-                }
+                CloseChannel(client);                
             }
             else
             {
@@ -186,11 +179,7 @@ namespace ConnectionModule
                 {
                     //destination unreacheable
                     channelIsOpened = false;
-                    CloseSocket(client.CmdSocket);
-                    if (client.DataSocket != null)
-                    {
-                        CloseSocket(client.DataSocket);
-                    } 
+                    CloseChannel(client);                
                 }
 
                 while (channelIsOpened)
@@ -201,13 +190,12 @@ namespace ConnectionModule
                         byte[] BytesTosend = new byte[1];
                         checkSocket.Send(BitConverter.GetBytes(timeToWait));
                         checkSocket.ReceiveTimeout = timeToWait*1000;
-                        byteRead = checkSocket.Receive(new byte[1]);
+                        byteRead = checkSocket.Receive(new byte[1]);                        
                     }
                     catch (Exception)
                     {
                         //destination unreacheable
-                        CloseSocket(client.CmdSocket);
-                        CloseSocket(client.DataSocket);
+                        CloseChannel(client);  
                         CloseSocket(checkSocket);
                         break;
                     }
@@ -215,7 +203,7 @@ namespace ConnectionModule
                     if (byteRead > 0)
                     {
                         //destination reacheable
-                        if (timeToWait <= 256)
+                        if (timeToWait <= 30)
                         {
                             timeToWait += 10;
                         }
@@ -224,14 +212,26 @@ namespace ConnectionModule
                     {
                         //destination unreacheable
                         channelIsOpened = false;
-                        CloseSocket(client.CmdSocket);
-                        CloseSocket(client.DataSocket);
+                        CloseChannel(client);
                         CloseSocket(checkSocket);
                         break;
                     }
-                    Thread.Sleep(timeToWait*1000);
+                    Thread.Sleep(10000);
                 }
             }
+        }
+
+
+        private void CloseChannel(Client client)
+        {
+
+            CloseSocket(client.CmdSocket);
+            if (client.DataSocket != null)
+            {
+                CloseSocket(client.DataSocket);
+            }
+            this.clients.Remove(client);
+            mainForm.ShowListeningBalloon();
         }
 
         private void CloseSocket(Socket s)

@@ -498,6 +498,7 @@ namespace ConnectionModule
             server.Shutdown(socket, SocketShutdown.Both);
             server.Close(socket);
             ResetKModifier();
+            mainForm.ShowListeningBalloon();
             throw new Exception("server has to be closed");
         }
 
@@ -569,6 +570,7 @@ namespace ConnectionModule
             }
             server.Shutdown(client.CmdSocket, SocketShutdown.Both);
             server.Close(client.CmdSocket);
+            MainForm.mainForm.ShowListeningBalloon();
             ResetKModifier();
         }
  

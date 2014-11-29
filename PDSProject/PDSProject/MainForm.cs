@@ -181,14 +181,19 @@ namespace MainApp
             else
             {
                 feedbackNotifyIcon.Visible = false;
-                mainNotifyIcon.BalloonTipTitle = StringConst.LISTENING;
-                mainNotifyIcon.BalloonTipText = StringConst.LISTENING_INFO;
-                mainNotifyIcon.ShowBalloonTip(400);
+                ShowListeningBalloon();
                 timer.Tick -= eventHandler;
                 this.connHandler.StopListeningData();
                 this.connHandler.closed = true;
             }
                        
+        }
+
+        public void ShowListeningBalloon()
+        {
+            mainNotifyIcon.BalloonTipTitle = StringConst.LISTENING;
+            mainNotifyIcon.BalloonTipText = StringConst.LISTENING_INFO;
+            mainNotifyIcon.ShowBalloonTip(400);
         }
 
         public void StartTimer()
