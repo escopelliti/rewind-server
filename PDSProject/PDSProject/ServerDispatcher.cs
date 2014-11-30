@@ -185,7 +185,7 @@ namespace ConnectionModule
             if (handler != null)
             {
                 handler(this, ea);                
-                server.Send(new byte[1], ea.requestState.client.CmdSocket());
+                server.Send(new byte[1], ea.requestState.client.CmdSocket);
             }
         }
 
