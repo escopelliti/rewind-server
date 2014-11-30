@@ -148,6 +148,7 @@
     </BootstrapperPackage>
   </ItemGroup>
   <ItemGroup>
+    <None Include="bin\x86\Release\resources\logoApp.png" />
     <Content Include="blinkingIcon.ico" />
   </ItemGroup>
   <ItemGroup>

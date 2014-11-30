@@ -45,8 +45,7 @@ namespace MainApp
         
         public MainForm()
         {
-            InitializeComponent();
-            
+            InitializeComponent();            
             clipboardTextDelegate += new SetTextToClipboard(SetClipboardText);
             clipboardFilesDelegate += new SetFileDropListClipboard(SetClipboardFileDropList);
             clipboardImageDelegate += new SetImageToClipboard(SetClipboardImage);
@@ -128,13 +127,13 @@ namespace MainApp
             this.menuItem1.Click += new System.EventHandler(this.menuItem1_Click);
 
             mainNotifyIcon = new System.Windows.Forms.NotifyIcon();
-            mainNotifyIcon.Icon = new System.Drawing.Icon("..\\..\\..\\resources\\computer.ico");
+            mainNotifyIcon.Icon = new System.Drawing.Icon(@"resources/logoAppIco.ico");
             mainNotifyIcon.MouseDoubleClick += new System.Windows.Forms.MouseEventHandler(MyNotifyIcon_MouseDoubleClick);
 
             mainNotifyIcon.ContextMenu = this.contextMenu1;
 
             feedbackNotifyIcon = new System.Windows.Forms.NotifyIcon();
-            feedbackNotifyIcon.Icon = new System.Drawing.Icon("..\\..\\..\\resources\\blinkingIcon.ico");
+            feedbackNotifyIcon.Icon = new System.Drawing.Icon(@"resources/blinkingIcon.ico");
         }
 
         private void Window_StateChanged(EventArgs e)

@@ -228,7 +228,7 @@ namespace Clipboard
             RequestState rs = (RequestState) rea.requestState;
             if (currentFileNum == this.filesToSend.Count)
             {
-                ServerDispatcher.server.Send(new byte[1], rs.client.GetSocket());
+                ServerDispatcher.server.Send(new byte[1], rs.client.CmdSocket);
                 return;
             }
             String file = this.filesToSend[currentFileNum];
