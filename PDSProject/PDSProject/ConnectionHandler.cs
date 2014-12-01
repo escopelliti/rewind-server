@@ -265,6 +265,7 @@ namespace ConnectionModule
         {
             try
             {
+                
                 Socket socket = ServerChannel.GetDataSocket();                                
                 socket.Close();
             }

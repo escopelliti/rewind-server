@@ -41,7 +41,7 @@ namespace MainApp
         private Configuration.ConfigurationMgr confMgr;
         private static Configuration.Configuration conf;
         private Discovery.ServiceRegister sr;
-        private ConnectionHandler connHandler;
+        public ConnectionHandler connHandler { get; set; }
         
         public MainForm()
         {

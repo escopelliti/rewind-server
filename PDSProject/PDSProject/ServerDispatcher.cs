@@ -502,7 +502,7 @@ namespace ConnectionModule
             {//custom exception would be better than this
                 requestDictionary.Clear();
             }
-            server.Send(new byte[16], ((RequestState)param).client.CmdSocket);
+            server.Send(new byte[1], ((RequestState)param).client.CmdSocket);
         }
 
         public void StartListeningTo(Client client)
@@ -528,7 +528,8 @@ namespace ConnectionModule
             }
             server.Shutdown(socket, SocketShutdown.Both);
             server.Close(socket);
-            ResetKModifier();
+            //mainForm.connHandler.clients.Remove(client);
+            ResetKModifier();            
             mainForm.ShowListeningBalloon();
             throw new Exception("server has to be closed");
         }
@@ -601,7 +602,8 @@ namespace ConnectionModule
             }
             server.Shutdown(client.CmdSocket, SocketShutdown.Both);
             server.Close(client.CmdSocket);
-            MainForm.mainForm.ShowListeningBalloon();
+            MainForm.mainForm.connHandler.clients.Remove(client);
+            MainForm.mainForm.ShowListeningBalloon();       
             ResetKModifier();
         }
  
