@@ -126,8 +126,8 @@ namespace ConnectionModule
                     newClient.DataSocket = clientSocket;
                     try
                     {
-                        Thread checkThread = new Thread(() => IsDstReacheable(newClient));
-                        checkThread.Start();
+                        //Thread checkThread = new Thread(() => IsDstReacheable(newClient));
+                        //checkThread.Start();
                         dispatcher.StartListeningToData(newClient);                       
                     }
                     catch (Exception)
@@ -231,7 +231,6 @@ namespace ConnectionModule
                 CloseSocket(client.DataSocket);
             }
             this.clients.Remove(client);
-            mainForm.ShowListeningBalloon();
         }
 
         private void CloseSocket(Socket s)

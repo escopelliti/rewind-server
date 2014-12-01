@@ -41,8 +41,7 @@ namespace MainApp
         private Configuration.ConfigurationMgr confMgr;
         private static Configuration.Configuration conf;
         private Discovery.ServiceRegister sr;
-        public ConnectionHandler connHandler { get; set; }
-        
+        public ConnectionHandler connHandler { get; set; }        
         public MainForm()
         {
             InitializeComponent();            
@@ -59,7 +58,7 @@ namespace MainApp
             StartTimer();
             InitServer();            
         }
-
+     
         private void InitServer()
         {
             if (confMgr.ExistConf())
@@ -182,7 +181,6 @@ namespace MainApp
             else
             {
                 feedbackNotifyIcon.Visible = false;
-                ShowListeningBalloon();
                 timer.Tick -= eventHandler;
                 this.connHandler.StopListeningData();
                 this.connHandler.closed = true;
