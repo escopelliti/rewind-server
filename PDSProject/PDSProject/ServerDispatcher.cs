@@ -528,9 +528,7 @@ namespace ConnectionModule
             }
             server.Shutdown(socket, SocketShutdown.Both);
             server.Close(socket);
-            //mainForm.connHandler.clients.Remove(client);
             ResetKModifier();            
-            mainForm.ShowListeningBalloon();
             throw new Exception("server has to be closed");
         }
 
@@ -603,7 +601,6 @@ namespace ConnectionModule
             server.Shutdown(client.CmdSocket, SocketShutdown.Both);
             server.Close(client.CmdSocket);
             MainForm.mainForm.connHandler.clients.Remove(client);
-            MainForm.mainForm.ShowListeningBalloon();       
             ResetKModifier();
         }
  
@@ -623,7 +620,6 @@ namespace ConnectionModule
                 else
                 {
                     StandardRequest sr = JsonConvert.DeserializeObject<StandardRequest>(Encoding.Unicode.GetString(newRequest.data));
-                    //JObject receivedJson = JObject.Parse(Encoding.Unicode.GetString(newRequest.data));
                     string type = sr.type;
                     string requestType = ProtocolUtils.protocolDictionary[type];
                     newRequest.type = requestType;

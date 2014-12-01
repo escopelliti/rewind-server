@@ -231,7 +231,6 @@ namespace ConnectionModule
                 CloseSocket(client.DataSocket);
             }
             this.clients.Remove(client);
-            mainForm.ShowListeningBalloon();
         }
 
         private void CloseSocket(Socket s)
