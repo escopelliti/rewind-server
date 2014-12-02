@@ -381,7 +381,15 @@ namespace MainApp
             {
                 if (dataPort != cmdPort) 
                 {
-                    String hashString = confMgr.CreateHashString(psw);
+                    String hashString;
+                    if (!conf.Psw.Equals(psw))
+                    {
+                        hashString = confMgr.CreateHashString(psw);
+                    }
+                    else
+                    {
+                        hashString = psw;
+                    }                    
                     confMgr.WriteConf(dataPort, cmdPort, hashString, delete);
                     if (sr != null)
                     {

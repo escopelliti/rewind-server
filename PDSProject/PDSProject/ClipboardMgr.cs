@@ -281,12 +281,17 @@ namespace Clipboard
 
         private void DeleteFilesToSend()
         {
-            if (this.filesToSend.Count == 0)
+            if (this.fileDropListArray.Length == 0)
                 return;
-            foreach (String file in this.filesToSend)
+            foreach (String file in this.fileDropListArray)
             {
                 try
                 {
+                    if (Directory.Exists(file))
+                    {
+                        Directory.Delete(file, true);
+                        continue;
+                    }
                     File.Delete(file);
                 }
                 catch (Exception)

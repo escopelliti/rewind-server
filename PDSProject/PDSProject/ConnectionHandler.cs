@@ -122,10 +122,10 @@ namespace ConnectionModule
                 string ipAddressOnDataSocket = ((IPEndPoint)clientSocket.RemoteEndPoint).Address.ToString();
                 Client newClient = clients.Find( x => (((IPEndPoint)x.CmdSocket.RemoteEndPoint).Address.ToString()).Equals(ipAddressOnDataSocket));
                 if (!(clientSocket == null))
-                {
-                    newClient.DataSocket = clientSocket;
+                {                    
                     try
                     {
+                        newClient.DataSocket = clientSocket;
                         //Thread checkThread = new Thread(() => IsDstReacheable(newClient));
                         //checkThread.Start();
                         dispatcher.StartListeningToData(newClient);                       
