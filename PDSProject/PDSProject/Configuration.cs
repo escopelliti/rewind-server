@@ -7,5 +7,6 @@ namespace Configuration
         public string Psw { get; set; }
         public String DataPort { get; set; }
         public String CmdPort { get; set; }
+        public bool Delete { get; set; }
     }
 }

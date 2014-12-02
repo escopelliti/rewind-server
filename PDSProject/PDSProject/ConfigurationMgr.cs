@@ -8,13 +8,14 @@ namespace Configuration
 {
     public class ConfigurationMgr
     {
-        public Configuration WriteConf(ushort dataPort, ushort cmdPort, string pswDigest)
+        public Configuration WriteConf(ushort dataPort, ushort cmdPort, string pswDigest, bool delete)
         {
             {
                 Configuration conf = new Configuration();
                 conf.CmdPort = cmdPort.ToString();
                 conf.DataPort = dataPort.ToString();
                 conf.Psw = pswDigest;
+                conf.Delete = delete;
                 try
                 {
                     String jsonConf = JsonConvert.SerializeObject(conf);
@@ -46,7 +47,7 @@ namespace Configuration
                     String psw = StringConst.DEFAULT_PSW;
                     String hashString = CreateHashString(psw);
                     System.Windows.Forms.MessageBox.Show(StringConst.DEFAULT_CONF, StringConst.OPERATION_COMPLETED, System.Windows.Forms.MessageBoxButtons.OK, System.Windows.Forms.MessageBoxIcon.Information);
-                    return WriteConf(Protocol.ProtocolUtils.DEFAULT_DATA_PORT, Protocol.ProtocolUtils.DEFAULT_CMD_PORT, hashString);                    
+                    return WriteConf(Protocol.ProtocolUtils.DEFAULT_DATA_PORT, Protocol.ProtocolUtils.DEFAULT_CMD_PORT, hashString, false);                    
                 }                    
                 String jsonConf = System.IO.File.ReadAllText(GenericDataStructure.StringConst.CONFIG_FILE);
                 Configuration conf = JsonConvert.DeserializeObject<Configuration>(jsonConf);
@@ -60,7 +61,20 @@ namespace Configuration
             {
                 return null;
             }
-        }        
+        }
+
+        public void DeleteCurrentConf()
+        {
+            try
+            {
+                System.IO.File.Delete(StringConst.CONFIG_FILE);
+            }
+            catch (Exception)
+            {
+                return;
+            }
+                        
+        }
 
         public String CreateHashString(string psw)
         {

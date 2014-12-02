@@ -20,6 +20,7 @@ namespace Clipboard
         private long currentClipboardDimension;
         private List<String> filesToSend;
         private byte[] dataBytes;
+        public static bool Delete { get; set; }
 
         public String CurrentContentToPaste { get; set; }        
         public String TextToPaste { get; set; }
@@ -228,6 +229,10 @@ namespace Clipboard
             RequestState rs = (RequestState) rea.requestState;
             if (currentFileNum == this.filesToSend.Count)
             {
+                if (Delete)
+                {
+                    DeleteFilesToSend();
+                }
                 ServerDispatcher.server.Send(new byte[1], rs.client.CmdSocket);
                 return;
             }
@@ -274,6 +279,23 @@ namespace Clipboard
             }
         }
 
+        private void DeleteFilesToSend()
+        {
+            if (this.filesToSend.Count == 0)
+                return;
+            foreach (String file in this.filesToSend)
+            {
+                try
+                {
+                    File.Delete(file);
+                }
+                catch (Exception)
+                {
+                    continue;
+                }
+            }
+        }
+
         private byte[] DataStandardRequestToSend(String requestType)
         {
             StandardRequest sr = new StandardRequest();
@@ -312,6 +334,6 @@ namespace Clipboard
                 return null;
             }
             return Encoding.Unicode.GetBytes(toSend);
-        }
+        }        
     }
 }

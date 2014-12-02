@@ -44,7 +44,9 @@ namespace MainApp
         public ConnectionHandler connHandler { get; set; }        
         public MainForm()
         {
-            InitializeComponent();            
+            InitializeComponent();
+            string tooltip = "Se abilitata quando cambierai computer verranno rimossi gli eventuali file che trasferisci.";
+            toolTipCheckbox.SetToolTip(this.checkBox, tooltip);
             clipboardTextDelegate += new SetTextToClipboard(SetClipboardText);
             clipboardFilesDelegate += new SetFileDropListClipboard(SetClipboardFileDropList);
             clipboardImageDelegate += new SetImageToClipboard(SetClipboardImage);
@@ -67,9 +69,15 @@ namespace MainApp
                 if (conf == null)
                 {
                     System.Windows.Forms.MessageBox.Show(StringConst.HOUSTON_PROBLEM, StringConst.HOUSTON_PROBLEM_TITLE, System.Windows.Forms.MessageBoxButtons.OK, System.Windows.Forms.MessageBoxIcon.Error);
+                    confMgr.DeleteCurrentConf();
                     Environment.Exit(-1);
                 }
                 connHandler = new ConnectionHandler(this, conf);
+                this.checkBox.Checked = conf.Delete;
+                this.comboBox1.Text = conf.DataPort;
+                this.comboBox2.Text = conf.CmdPort;
+                this.textBox1.Text = conf.Psw;
+                ClipboardMgr.Delete = conf.Delete;
                 Window_StateChanged(new EventArgs());
                 sr = new Discovery.ServiceRegister(Convert.ToUInt16(conf.DataPort), Convert.ToUInt16(conf.CmdPort), this);               
             }
@@ -127,7 +135,7 @@ namespace MainApp
 
             mainNotifyIcon = new System.Windows.Forms.NotifyIcon();
             mainNotifyIcon.Icon = new System.Drawing.Icon(@"resources/logoAppIco.ico");
-            mainNotifyIcon.MouseDoubleClick += new System.Windows.Forms.MouseEventHandler(MyNotifyIcon_MouseDoubleClick);
+            mainNotifyIcon.MouseDoubleClick += new System.Windows.Forms.MouseEventHandler(TrayIcon_MouseDoubleClick);
 
             mainNotifyIcon.ContextMenu = this.contextMenu1;
 
@@ -149,7 +157,7 @@ namespace MainApp
             }
         }       
 
-        private void MyNotifyIcon_MouseDoubleClick(object sender, System.Windows.Forms.MouseEventArgs e)
+        private void TrayIcon_MouseDoubleClick(object sender, System.Windows.Forms.MouseEventArgs e)
         {            
             this.WindowState = FormWindowState.Normal;
             Window_StateChanged(new EventArgs());
@@ -261,7 +269,12 @@ namespace MainApp
         {                        
             comboBox1.DataSource = portRange;
             var bindingSrc = new BindingSource(portRange, null);
-            this.comboBox2.DataSource = bindingSrc;            
+            this.comboBox2.DataSource = bindingSrc;
+            if (conf != null)
+            {
+                this.comboBox1.Text = conf.DataPort;
+                this.comboBox2.Text = conf.CmdPort;
+            }            
         }
 
         private void CreateComboboxRange(Object sender, DoWorkEventArgs e)
@@ -286,7 +299,7 @@ namespace MainApp
         }
 
         public void OnMouseHover(object sender, System.EventArgs e)
-        {
+        {            
             if (bw.IsBusy != true && this.comboBox1.Items.Count == 0)
             {
                 bw.RunWorkerAsync();
@@ -363,12 +376,13 @@ namespace MainApp
             string psw = this.textBox1.Text;
             ushort dataPort = (ushort)this.comboBox1.SelectedItem;
             ushort cmdPort = (ushort) this.comboBox2.SelectedItem;
+            bool delete = this.checkBox.Checked;
             if (psw != null && psw != String.Empty && psw != "")
             {
                 if (dataPort != cmdPort) 
                 {
                     String hashString = confMgr.CreateHashString(psw);
-                    confMgr.WriteConf(dataPort, cmdPort, hashString);
+                    confMgr.WriteConf(dataPort, cmdPort, hashString, delete);
                     if (sr != null)
                     {
                         MessageBox.Show(StringConst.CONF_CHANGED_MEX, StringConst.INFORMATION, MessageBoxButtons.OK, MessageBoxIcon.Information);                       
