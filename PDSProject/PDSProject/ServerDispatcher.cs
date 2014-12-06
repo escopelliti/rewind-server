@@ -493,12 +493,15 @@ namespace ConnectionModule
         private void CreateClipboardContent(JObject contentJson, string dir) 
         {
             List<ProtocolUtils.FileStruct> files = new List<ProtocolUtils.FileStruct>();
+            if (contentJson[ProtocolUtils.FILE] != null)
+            {
                 files = JsonConvert.DeserializeObject<List<ProtocolUtils.FileStruct>>(contentJson[ProtocolUtils.FILE].ToString());
                 filesToReceive.AddRange(files);
+            }
             foreach (var prop in contentJson) 
             {
                 if(prop.Key != ProtocolUtils.FILE) 
-            {
+             {
                     Directory.CreateDirectory(ProtocolUtils.TMP_DIR + dir + "\\" + prop.Key);
                     CreateClipboardContent((JObject)contentJson[prop.Key], dir + "\\" + prop.Key);                    
                 }
