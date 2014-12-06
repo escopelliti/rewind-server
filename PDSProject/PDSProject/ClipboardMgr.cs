@@ -42,6 +42,7 @@ namespace Clipboard
             RequestState requestState = (RequestState)param;
             filesToSend.Clear();
             clipboardContent = MainForm.GetClipboardContent();
+            byte[] byteToSend;
             if (clipboardContent != null)
             {
                 switch (clipboardContent.contentType)
@@ -57,6 +58,13 @@ namespace Clipboard
                             }
                             else
                             {
+                                if (!Directory.Exists(s))
+                                {
+                                    currentClipboardDimension = 0;
+                                    byteToSend = BitConverter.GetBytes(currentClipboardDimension);
+                                    ServerDispatcher.server.Send(byteToSend, requestState.client.CmdSocket);
+                                    return;
+                                }
                                 currentClipboardDimension += GetDirectorySize(s);
                             }
                         }
@@ -81,7 +89,7 @@ namespace Clipboard
             {
                 currentClipboardDimension = 0;
             }
-            byte[] byteToSend = BitConverter.GetBytes(currentClipboardDimension);
+            byteToSend = BitConverter.GetBytes(currentClipboardDimension);
             currentClipboardDimension = 0;
             ServerDispatcher.server.Send(byteToSend, requestState.client.CmdSocket);
         }
@@ -242,6 +250,13 @@ namespace Clipboard
             long dim = 0;
             if (File.Exists(file))
                 {
+                    if (new FileInfo(file).Length == 0)
+                    {
+                        currentFileNum++;
+                        offset = 0;
+                        ServerDispatcher.server.Send(new byte[1], rs.client.CmdSocket);
+                        return;
+                    }
                     byte[] bytesFile = new byte[4096];
                     try
                     {

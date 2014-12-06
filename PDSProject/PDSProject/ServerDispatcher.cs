@@ -344,41 +344,54 @@ namespace ConnectionModule
         private void MoveByteToFiles(Object source, Object param)
         {
             RequestState request = (RequestState)param;
-            byte[] actualData = new byte[request.data.Length - ProtocolUtils.TOKEN_DIM];
+            clipboardMgr.CurrentContentToPaste = ProtocolUtils.TRANSFER_FILES;                        
+            byte[] actualData = request.data;
             try
             {
-
-            System.Buffer.BlockCopy(request.data, ProtocolUtils.TOKEN_DIM, actualData, 0, actualData.Length); 
-            if (currentFileNum < filesToReceive.Count)
-            {
-                ProtocolUtils.FileStruct currentFile = filesToReceive.ElementAt(currentFileNum);             
-                using (var stream = new FileStream(ProtocolUtils.TMP_DIR + currentFile.dir + currentFile.name, FileMode.Append))
+                if (currentFileNum < filesToReceive.Count)
                 {
-                    stream.Write(actualData, 0, actualData.Length);
-                    stream.Close();
-                    server.Send(new byte[1], request.client.CmdSocket);
-                }
-                if (new FileInfo(ProtocolUtils.TMP_DIR + currentFile.dir + currentFile.name).Length == currentFile.size)
-                {                    
-                    currentFileNum++;
-                    if (currentFileNum == filesToReceive.Count)
+                    ProtocolUtils.FileStruct currentFile = filesToReceive.ElementAt(currentFileNum);
+                    if (currentFile.size == 0)
                     {
-                        RequestState value = new RequestState();
-                        if (!requestDictionary.TryRemove(request.token, out value))
-                        {//custom exception would be better than this
+                        File.Create(ProtocolUtils.TMP_DIR + currentFile.dir + currentFile.name);
+                        currentFileNum++;
+                        server.Send(new byte[1], request.client.CmdSocket);
+                        if (currentFileNum == filesToReceive.Count)
+                        {
+                            RequestState value = new RequestState();
+                            if (!requestDictionary.TryRemove(request.token, out value))
+                            {//custom exception would be better than this
                                 requestDictionary.Clear();
+                            }
+                        }                    
+                        return;
+                    }
+                    using (var stream = new FileStream(ProtocolUtils.TMP_DIR + currentFile.dir + currentFile.name, FileMode.Append))
+                    {
+                        stream.Write(actualData, 0, actualData.Length);
+                        stream.Close();                    
+                    }
+                    if (new FileInfo(ProtocolUtils.TMP_DIR + currentFile.dir + currentFile.name).Length >= currentFile.size)
+                    {                    
+                        currentFileNum++;
+                        if (currentFileNum == filesToReceive.Count)
+                        {
+                            RequestState value = new RequestState();
+                            if (!requestDictionary.TryRemove(request.token, out value))
+                            {//custom exception would be better than this
+                                    requestDictionary.Clear();
+                            }
+                            clipboardMgr.CurrentContentToPaste = ProtocolUtils.TRANSFER_FILES;                        
                         }
-                        clipboardMgr.CurrentContentToPaste = ProtocolUtils.TRANSFER_FILES;                        
+                        }
                     }
-                    }
-                }
-
-                }
+            }
             catch (Exception)
             {
                 server.Shutdown(request.client.CmdSocket, SocketShutdown.Both);
                 server.Close(request.client.CmdSocket);
             }
+            server.Send(new byte[1], request.client.CmdSocket);
         }
 
         private static void DeleteFileDirContent(string toRemove) 
