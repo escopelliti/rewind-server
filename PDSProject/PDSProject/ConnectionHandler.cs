@@ -126,8 +126,8 @@ namespace ConnectionModule
                     try
                     {
                         newClient.DataSocket = clientSocket;
-                        //Thread checkThread = new Thread(() => IsDstReacheable(newClient));
-                        //checkThread.Start();
+                        Thread checkThread = new Thread(() => IsDstReacheable(newClient));
+                        checkThread.Start();
                         dispatcher.StartListeningToData(newClient);                       
                     }
                     catch (Exception)
