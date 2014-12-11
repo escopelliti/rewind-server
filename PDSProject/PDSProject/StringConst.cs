@@ -13,6 +13,7 @@ namespace GenericDataStructure
         /// CONFIGURATION
         /// </summary>
         public const String CONFIG_FILE = "config.json";
+        public const String DEF_DIR = "resources/";
         public const String DEFAULT_PSW = "default";
         public const String DEFAULT_CONF = "Configurazione di default creata. La psw è \"default\"";
         public const String CONF_CHANGED_MEX = "Le modifiche saranno disponibili al riavvio dell'applicazione";

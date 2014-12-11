@@ -19,7 +19,7 @@ namespace Configuration
                 try
                 {
                     String jsonConf = JsonConvert.SerializeObject(conf);
-                    using (var stream = new System.IO.StreamWriter(GenericDataStructure.StringConst.CONFIG_FILE, false))
+                    using (var stream = new System.IO.StreamWriter(@StringConst.DEF_DIR + GenericDataStructure.StringConst.CONFIG_FILE, false))
                     {
                         stream.Write(jsonConf);
                         stream.Close();
@@ -35,7 +35,7 @@ namespace Configuration
 
         public bool ExistConf()
         {
-            return System.IO.File.Exists(GenericDataStructure.StringConst.CONFIG_FILE);
+            return System.IO.File.Exists(@StringConst.DEF_DIR + GenericDataStructure.StringConst.CONFIG_FILE);
         }
 
         public Configuration ReadConf()
@@ -48,8 +48,8 @@ namespace Configuration
                     String hashString = CreateHashString(psw);
                     System.Windows.Forms.MessageBox.Show(StringConst.DEFAULT_CONF, StringConst.OPERATION_COMPLETED, System.Windows.Forms.MessageBoxButtons.OK, System.Windows.Forms.MessageBoxIcon.Information);
                     return WriteConf(Protocol.ProtocolUtils.DEFAULT_DATA_PORT, Protocol.ProtocolUtils.DEFAULT_CMD_PORT, hashString, false);                    
-                }                    
-                String jsonConf = System.IO.File.ReadAllText(GenericDataStructure.StringConst.CONFIG_FILE);
+                }
+                String jsonConf = System.IO.File.ReadAllText(@StringConst.DEF_DIR + GenericDataStructure.StringConst.CONFIG_FILE);
                 Configuration conf = JsonConvert.DeserializeObject<Configuration>(jsonConf);
                 return conf;
             }
@@ -67,7 +67,7 @@ namespace Configuration
         {
             try
             {
-                System.IO.File.Delete(StringConst.CONFIG_FILE);
+                System.IO.File.Delete(@StringConst.DEF_DIR + StringConst.CONFIG_FILE);
             }
             catch (Exception)
             {

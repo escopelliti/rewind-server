@@ -35,7 +35,7 @@ namespace Protocol
 
         public const string TMP_IMAGE_FILE = ".\\tmp.jpg";
         public const string TMP_AUDIO_FILE = ".\\tmp.wav";
-        public const string TMP_DIR = ".\\tmp\\";
+        public const string TMP_DIR = ".\\resources\\tmp\\";
 
         public const ushort DEFAULT_DATA_PORT = 12001;
         public const ushort DEFAULT_CMD_PORT = 12000;

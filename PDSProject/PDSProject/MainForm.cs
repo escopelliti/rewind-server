@@ -63,6 +63,10 @@ namespace MainApp
      
         private void InitServer()
         {
+            if (!Directory.Exists(Protocol.ProtocolUtils.TMP_DIR))
+            {
+                Directory.CreateDirectory(Protocol.ProtocolUtils.TMP_DIR);
+            } 
             if (confMgr.ExistConf())
             {
                 conf = confMgr.ReadConf();
@@ -134,13 +138,13 @@ namespace MainApp
             this.menuItem1.Click += new System.EventHandler(this.menuItem1_Click);
 
             mainNotifyIcon = new System.Windows.Forms.NotifyIcon();
-            mainNotifyIcon.Icon = new System.Drawing.Icon(@"resources/logoAppIco.ico");
+            mainNotifyIcon.Icon = new System.Drawing.Icon(@"resources/images/logoAppIco.ico");
             mainNotifyIcon.MouseDoubleClick += new System.Windows.Forms.MouseEventHandler(TrayIcon_MouseDoubleClick);
 
             mainNotifyIcon.ContextMenu = this.contextMenu1;
 
             feedbackNotifyIcon = new System.Windows.Forms.NotifyIcon();
-            feedbackNotifyIcon.Icon = new System.Drawing.Icon(@"resources/blinkingIcon.ico");
+            feedbackNotifyIcon.Icon = new System.Drawing.Icon(@"resources/images/blinkingIcon.ico");
         }
 
         private void Window_StateChanged(EventArgs e)
@@ -382,14 +386,22 @@ namespace MainApp
                 if (dataPort != cmdPort) 
                 {
                     String hashString;
-                    if (!conf.Psw.Equals(psw))
+                    if (conf != null)
                     {
-                        hashString = confMgr.CreateHashString(psw);
+                        if (!conf.Psw.Equals(psw))
+                        {
+                            hashString = confMgr.CreateHashString(psw);
+                        }
+                        else
+                        {
+                            hashString = psw;
+                        }
                     }
                     else
                     {
-                        hashString = psw;
-                    }                    
+                        hashString = confMgr.CreateHashString(psw);
+                    }
+                                       
                     confMgr.WriteConf(dataPort, cmdPort, hashString, delete);
                     if (sr != null)
                     {
